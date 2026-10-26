@@ -13,7 +13,7 @@ route("painel", "seller", () => {
   const labels = S.period === "12m" ? ["nov", "dez", "jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out"] : S.period === "hoje" ? ["08h", "09h", "10h", "11h", "12h", "13h", "14h", "15h", "16h", "17h", "18h", "19h"] : (S.period === "7d" ? DAYS30.slice(-7) : DAYS30).map((d) => dt(d, false));
   const methods = [["mpesa", 46.3], ["emola", 18.2], ["card", 15.4], ["applepay", 10.8], ["googlepay", 9.3]];
   const top = PRODUCTS.slice(0, 4).map((p, i) => [p, [0.52, 0.27, 0.13, 0.08][i]]);
-  const goal = 1000000 * 5, total = 5870340;
+  const goal = 10000000, total = 5870340;
   return `<div class="welcome"><div class="stack-xs"><span class="faint" style="font-size:13px">Quinta-feira, 22 de outubro</span><h1>Olá, Ana</h1><p class="muted">Vendeu ${int(Math.round(37))} vezes hoje. O Excel do Zero continua a puxar as vendas.</p></div>${periodTabs()}</div>
   <div class="g4">
     ${kpi("Faturamento líquido", mt(rev, 0), { icon: "wallet", delta: 12.4, hint: `${pl} · já sem taxas`, spark: REV30.slice(-14) })}
@@ -28,7 +28,7 @@ route("painel", "seller", () => {
         <div class="balance-split"><div><small>A libertar</small><b>${mt(126480)}</b></div><div><small>Reserva 5%</small><b>${mt(18210)}</b></div></div>
         <div class="row" style="gap:8px">${btn("Sacar", { v: "primary", i: "cash", act: "withdraw", cls: "grow" })}${btn("Extrato", { go: "financeiro" })}</div>
         <small>Próxima libertação: 24 out · ${mt(6120)}</small></section>
-      ${card("", `<div class="plaque"><span class="plaque-medal">${ic("award", 26)}</span><div class="grow stack-xs"><b>Rumo à placa de 5 milhões</b><span class="faint" style="font-size:13px">${mt(total, 0)} faturados desde jan 2025</span></div></div><div class="ad-progress"><div class="ad-progress-top"><span>Faltam ${mt(goal - total < 0 ? 0 : goal - total, 0)}</span><strong>${Math.min(100, Math.round((total / goal) * 100))}%</strong></div><div class="ad-progress-track"><div class="ad-progress-fill" style="width:${Math.min(100, (total / goal) * 100)}%;background:var(--primary)"></div></div></div>`)}
+      ${card("", `<div class="plaque"><span class="plaque-medal">${ic("award", 26)}</span><div class="grow stack-xs"><b>Rumo à placa de 10 milhões</b><span class="faint" style="font-size:13px">${mt(total, 0)} faturados desde jan 2025</span></div></div><div class="ad-progress"><div class="ad-progress-top"><span>Faltam ${mt(goal - total < 0 ? 0 : goal - total, 0)}</span><strong>${Math.min(100, Math.round((total / goal) * 100))}%</strong></div><div class="ad-progress-track"><div class="ad-progress-fill" style="width:${Math.min(100, (total / goal) * 100)}%;background:var(--primary)"></div></div></div>`)}
     </div>
   </div>
   <div class="g3">

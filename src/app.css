@@ -202,7 +202,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .lp { background: var(--bg); }
 .lp-wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 @media (min-width: 768px) { .lp-wrap { padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); } }
-.lp-nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: var(--z-sticky); background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px); border-bottom: 1px solid var(--border); }
+.lp-nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: var(--z-sticky); background: color-mix(in srgb, var(--bg) 96%, transparent); border-bottom: 1px solid var(--border); }
 .lp-nav .lp-wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); height: 68px; }
 .lp-links { display: flex; gap: var(--space-1); }
 .lp-links a { padding: 8px 12px; border-radius: var(--radius-md); text-decoration: none; color: var(--text-secondary); font-weight: 500; font-size: 14px; }
