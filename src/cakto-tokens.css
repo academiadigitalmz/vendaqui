@@ -22,8 +22,6 @@
   --text: #212b36;
   --text-secondary: #637381;
   --text-tertiary: #7a8794;
-  --success: #1c8833;
-  --success-soft: #ebf8ee;
   --card-border: transparent;
   --shadow-xs: 0 1px 2px rgba(145, 158, 171, 0.16);
   --shadow-sm: 0 0 2px 0 rgba(145, 158, 171, 0.2), 0 12px 24px -4px rgba(145, 158, 171, 0.12);
@@ -56,7 +54,7 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --primary: #3fc958; --primary-hover: #61dc76; --primary-text: #66e882; --primary-soft: #12261a; --primary-soft-border: #1f4a2c; --on-primary: #071c0c;
   --bg: #0b0f0d; --surface: #141a17; --surface-subtle: #111613; --surface-hover: #1b2420; --surface-active: #233029; --border: #22302a; --border-strong: #3b4d43;
-  --text: #f5f8f6; --text-secondary: #a6b2ab; --text-tertiary: #7f9388; --success: #66e882; --success-soft: #12261a; --card-border: #1d2823;
+  --text: #f5f8f6; --text-secondary: #a6b2ab; --text-tertiary: #7f9388; --card-border: #1d2823;
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-sm: 0 0 2px 0 rgba(0, 0, 0, 0.3), 0 12px 24px -4px rgba(0, 0, 0, 0.4); --shadow-md: 0 16px 32px -4px rgba(0, 0, 0, 0.5); --shadow-lg: 0 20px 40px -4px rgba(0, 0, 0, 0.6); --shadow-xl: 0 24px 48px 0 rgba(0, 0, 0, 0.7);
   --shadow-focus: 0 0 0 2px #141a17, 0 0 0 4px #3fc958;
   --hl-from: #2b9c54; --hl-to: #0f3d1f; --hl-text: #f5f8f6;
@@ -68,7 +66,7 @@
 :root[data-theme="dark"] {
   --primary: #3fc958; --primary-hover: #61dc76; --primary-text: #66e882; --primary-soft: #12261a; --primary-soft-border: #1f4a2c; --on-primary: #071c0c;
   --bg: #0b0f0d; --surface: #141a17; --surface-subtle: #111613; --surface-hover: #1b2420; --surface-active: #233029; --border: #22302a; --border-strong: #3b4d43;
-  --text: #f5f8f6; --text-secondary: #a6b2ab; --text-tertiary: #7f9388; --success: #66e882; --success-soft: #12261a; --card-border: #1d2823;
+  --text: #f5f8f6; --text-secondary: #a6b2ab; --text-tertiary: #7f9388; --card-border: #1d2823;
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-sm: 0 0 2px 0 rgba(0, 0, 0, 0.3), 0 12px 24px -4px rgba(0, 0, 0, 0.4); --shadow-md: 0 16px 32px -4px rgba(0, 0, 0, 0.5); --shadow-lg: 0 20px 40px -4px rgba(0, 0, 0, 0.6); --shadow-xl: 0 24px 48px 0 rgba(0, 0, 0, 0.7);
   --shadow-focus: 0 0 0 2px #141a17, 0 0 0 4px #3fc958;
   --hl-from: #2b9c54; --hl-to: #0f3d1f; --hl-text: #f5f8f6;

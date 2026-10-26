@@ -9,6 +9,7 @@ Protótipo de UI de um gateway de pagamentos para infoprodutos (Moçambique): la
 |---|---|---|
 | `vendaqui` | Design System Academia Digital (laranja) | `/` |
 | `cakto` | Linguagem visual da Cakto (verde) | `/cakto/` |
+| `cakto-laranja` | Linguagem visual da Cakto com o laranja do DS | `/cakto-laranja/` |
 
 ## Comandos
 
@@ -23,6 +24,6 @@ cloudflared tunnel --url http://127.0.0.1:8848   # expõe para testes
 
 - `src/ds-*.css`: tokens e componentes do Design System Academia Digital (extraídos do ficheiro original)
 - `src/app.css`, `src/tokens-extra-*.css`: composições do VendAqui
-- `src/cakto*.css`: tokens e pele da variante Cakto
+- `src/cakto*.css`: tokens e pele da variante Cakto; `cakto-laranja` reaproveita-os com a tabela `RECOLOR` de `src/build.py`
 - `src/*.js`: dados de exemplo, ecrãs e interações (sem framework)
 - `assets/logos/`: originais dos logótipos de pagamento. São marcas dos respetivos donos; confirmar as regras de uso antes de lançar.
