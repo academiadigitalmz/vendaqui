@@ -1,0 +1,20 @@
+  /* VendAqui · camadas sobre o Design System Academia Digital */
+  --hl-from: var(--orange-500);
+  --hl-to: var(--orange-600);
+  --hl-text: #1a1205;
+  --inv-bg: #0f1115;
+  --inv-surface: #171a21;
+  --inv-hover: #1f232c;
+  --inv-border: #262b35;
+  --inv-text: #f2f4f7;
+  --inv-text-2: #aab2bf;
+  --inv-text-3: #8b94a3;
+  --inv-accent: #f9b23a;
+  --inv-accent-soft: rgba(245, 158, 11, 0.14);
+  --m-emola: #d97706;
+  --m-mpesa: #c81e1e;
+  --m-card: #2563eb;
+  --chart-grid: var(--gray-100);
+  --glow: rgba(245, 158, 11, 0.22);
+  --m-applepay: var(--gray-900);
+  --m-googlepay: #0b7a4c;

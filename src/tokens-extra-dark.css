@@ -1,0 +1,14 @@
+  --hl-from: var(--orange-600);
+  --hl-to: var(--orange-900);
+  --hl-text: #ffffff;
+  --inv-bg: #07080b;
+  --inv-surface: #101319;
+  --inv-hover: #181c24;
+  --inv-border: #222833;
+  --m-emola: #f9b23a;
+  --m-mpesa: #f87171;
+  --m-card: #78adff;
+  --chart-grid: #1d222b;
+  --glow: rgba(245, 158, 11, 0.16);
+  --m-applepay: #f2f4f7;
+  --m-googlepay: #3ed08a;
