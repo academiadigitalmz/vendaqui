@@ -2,7 +2,7 @@
 // pedidos falhados ou páginas vazias. Opcionalmente guarda capturas de ecrã.
 //
 //   npm run build && npx vite preview --port 4173 &
-//   node scripts/check-routes.mjs [--base http://localhost:4173] [--shots pasta] [--skin cakto-laranja] [--theme dark] [--width 1280]
+//   node scripts/check-routes.mjs [--base http://localhost:4173] [--shots pasta] [--skin cakto] [--theme dark] [--width 1280]
 //
 // Usa o Chrome instalado (CHROME_PATH para outro executável).
 import { chromium } from "playwright-core";
@@ -11,7 +11,7 @@ import { mkdirSync } from "node:fs";
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const base = arg("--base", "http://localhost:4173");
 const shots = arg("--shots", "");
-const skin = arg("--skin", "cakto-laranja");
+const skin = arg("--skin", "cakto");
 const theme = arg("--theme", "light");
 const width = Number(arg("--width", "1280"));
 const only = arg("--only", "");

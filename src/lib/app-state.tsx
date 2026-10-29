@@ -7,8 +7,8 @@ import { Icon, type IconName } from "./icons";
 export type Skin = "academia" | "cakto" | "cakto-laranja";
 export type ThemeChoice = "light" | "dark" | null;
 export const SKINS: { id: Skin; label: string; note: string }[] = [
-  { id: "cakto-laranja", label: "Cakto laranja", note: "Linguagem Cakto com o laranja da marca" },
   { id: "cakto", label: "Cakto verde", note: "Linguagem Cakto original" },
+  { id: "cakto-laranja", label: "Cakto laranja", note: "Linguagem Cakto com o laranja da marca" },
   { id: "academia", label: "Academia Digital", note: "Design System Academia Digital" },
 ];
 export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS !== "false";
@@ -30,7 +30,7 @@ interface Ctx {
 const AppCtx = createContext<Ctx | null>(null);
 export const useApp = () => { const c = useContext(AppCtx); if (!c) throw new Error("useApp fora do AppProvider"); return c; };
 
-const DEFAULT_SKIN = (import.meta.env.VITE_DEFAULT_SKIN as Skin) || "cakto-laranja";
+const DEFAULT_SKIN = (import.meta.env.VITE_DEFAULT_SKIN as Skin) || "cakto";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<ThemeChoice>(() => store.get<ThemeChoice>("theme", null));

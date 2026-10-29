@@ -37,7 +37,7 @@ Copie `.env.example` para `.env.local`.
 |---|---|---|
 | `VITE_API_URL` | `/api` | Endereço da API (a app acrescenta `/v1`) |
 | `VITE_USE_MOCKS` | `true` | `false` quando o backend estiver pronto |
-| `VITE_DEFAULT_SKIN` | `cakto-laranja` | Visual inicial: `cakto-laranja`, `cakto` ou `academia` |
+| `VITE_DEFAULT_SKIN` | `cakto` | Visual inicial: `cakto` (verde), `cakto-laranja` ou `academia` |
 | `VITE_SHOW_SWITCHER` | `true` | Mostra o botão "Áreas do protótipo" para quem está a testar |
 
 ## Áreas e rotas
@@ -88,8 +88,8 @@ O projeto já tem `vercel.json`. No Vercel: *Add New → Project → Import* est
 
 Três visuais partilham os mesmos componentes e podem ser trocados no botão "Áreas do protótipo":
 
-- **Cakto laranja** (por omissão): linguagem visual da Cakto com o laranja da marca
-- **Cakto verde**: linguagem visual da Cakto original
+- **Cakto verde** (por omissão): linguagem visual da Cakto original
+- **Cakto laranja**: linguagem visual da Cakto com o laranja da marca
 - **Academia Digital**: o Design System original
 
 As fontes estão em `src/styles/skins/`; `scripts/skins.mjs` gera `skins.generated.css` em cada build.
