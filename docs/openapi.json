@@ -1,0 +1,6247 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "VendAqui API",
+    "version": "1.0.0",
+    "description": "Contrato entre o frontend VendAqui e o backend. Gerado a partir de src/api/types.ts. Valores monetários em meticais (MZN), datas em ISO 8601. Erros devolvem ApiError com código HTTP 4xx."
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "Mesmo domínio (VITE_API_URL=/api)"
+    },
+    {
+      "url": "https://api.vendaqui.co.mz/v1",
+      "description": "Exemplo de produção"
+    }
+  ],
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Autenticação"
+    },
+    {
+      "name": "Produtor"
+    },
+    {
+      "name": "Checkout público"
+    },
+    {
+      "name": "Aluno"
+    },
+    {
+      "name": "Backoffice"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Entrar com email e palavra-passe",
+        "operationId": "postAuthLogin",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Criar conta de produtor (inicia o KYC)",
+        "operationId": "postAuthRegister",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Utilizador da sessão",
+        "operationId": "getMe",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/dashboard": {
+      "get": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Resumo do painel para o período",
+        "operationId": "getSellerDashboard",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "12m"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/products": {
+      "get": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Lista de produtos",
+        "operationId": "getSellerProducts",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Product"
+                  }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Criar produto (fica em análise)",
+        "operationId": "postSellerProducts",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/products/{id}": {
+      "get": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Detalhe do produto com ofertas, checkout, upsell e afiliação",
+        "operationId": "getSellerProductsId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDetail"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Atualizar campos do produto",
+        "operationId": "patchSellerProductsId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDetail"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductDetail"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/products/{id}/checkout": {
+      "put": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Guardar a configuração do checkout",
+        "operationId": "putSellerProductsIdCheckout",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSettings"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutSettings"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/sales": {
+      "get": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Vendas com filtros e contagens por estado",
+        "operationId": "getSellerSales",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SaleStatus"
+            }
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/PaymentMethod"
+            }
+          },
+          {
+            "name": "productId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalesPage"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/sales/{id}": {
+      "get": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Detalhe da venda com histórico e rastreio",
+        "operationId": "getSellerSalesId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaleDetail"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/sales/{id}/refund": {
+      "post": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Reembolsar uma venda aprovada",
+        "operationId": "postSellerSalesIdRefund",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaleDetail"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/sales/{id}/resend-access": {
+      "post": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Reenviar o acesso ao comprador",
+        "operationId": "postSellerSalesIdResendAccess",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sem conteúdo"
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/subscriptions": {
+      "get": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Assinantes e resumo { summary: SubscriptionsSummary, items: Subscription[], total }",
+        "operationId": "getSellerSubscriptions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Inline"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/customers": {
+      "get": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Clientes { summary: CustomersSummary } + Paginated<Customer>",
+        "operationId": "getSellerCustomers",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Inline"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/affiliates": {
+      "get": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Afiliados, pedidos e mercado de afiliação",
+        "operationId": "getSellerAffiliates",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AffiliatesOverview"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/affiliates/requests/{id}": {
+      "post": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Aprovar ou recusar um pedido de afiliação",
+        "operationId": "postSellerAffiliatesRequestsId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sem conteúdo"
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/coupons": {
+      "get": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Cupões",
+        "operationId": "getSellerCoupons",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Coupon"
+                  }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Criar cupão (409 se o código já existir)",
+        "operationId": "postSellerCoupons",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Coupon"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CouponInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/recovery": {
+      "get": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Carrinhos abandonados e automações",
+        "operationId": "getSellerRecovery",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryOverview"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/recovery/automations/{id}": {
+      "patch": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Ligar ou desligar uma automação",
+        "operationId": "patchSellerRecoveryAutomationsId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryAutomation"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnabledInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/recovery/carts/{id}/contact": {
+      "post": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Enviar link de pagamento ao comprador",
+        "operationId": "postSellerRecoveryCartsIdContact",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sem conteúdo"
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/courses/{productId}": {
+      "get": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Módulos e aulas do curso, com estatísticas",
+        "operationId": "getSellerCoursesProductId",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/finance": {
+      "get": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Saldo, extrato, saques, contas e prazos",
+        "operationId": "getSellerFinance",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Finance"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/payouts": {
+      "post": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Pedir saque (422 se abaixo de 100 MT ou acima do saldo)",
+        "operationId": "postSellerPayouts",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payout"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayoutInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/integrations": {
+      "get": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Integrações, chaves da API e webhooks",
+        "operationId": "getSellerIntegrations",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationsOverview"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/account": {
+      "get": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Perfil, verificação, notificações, segurança e equipa",
+        "operationId": "getSellerAccount",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller/account/profile": {
+      "patch": {
+        "tags": [
+          "Produtor"
+        ],
+        "summary": "Atualizar o perfil público",
+        "operationId": "patchSellerAccountProfile",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Inline"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Inline"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/checkout/{slug}": {
+      "get": {
+        "tags": [
+          "Checkout público"
+        ],
+        "summary": "Dados do checkout de um produto",
+        "operationId": "getPublicCheckoutSlug",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCheckout"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/checkout/{slug}/coupons": {
+      "post": {
+        "tags": [
+          "Checkout público"
+        ],
+        "summary": "Validar cupão",
+        "operationId": "postPublicCheckoutSlugCoupons",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CouponCheck"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/checkout/{slug}/orders": {
+      "post": {
+        "tags": [
+          "Checkout público"
+        ],
+        "summary": "Criar pedido e iniciar o pagamento. M-Pesa/e-Mola enviam push USSD; cartão usa cardToken do adquirente",
+        "operationId": "postPublicCheckoutSlugOrders",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/orders/{id}": {
+      "get": {
+        "tags": [
+          "Checkout público"
+        ],
+        "summary": "Estado do pedido (o frontend consulta de segundo a segundo até sair de awaiting_confirmation)",
+        "operationId": "getPublicOrdersId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/orders/{id}/upsell": {
+      "post": {
+        "tags": [
+          "Checkout público"
+        ],
+        "summary": "Aceitar o upsell com 1 clique",
+        "operationId": "postPublicOrdersIdUpsell",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/student/library": {
+      "get": {
+        "tags": [
+          "Aluno"
+        ],
+        "summary": "Produtos comprados e recomendação",
+        "operationId": "getStudentLibrary",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Library"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/student/courses/{productId}": {
+      "get": {
+        "tags": [
+          "Aluno"
+        ],
+        "summary": "Curso com o progresso do aluno",
+        "operationId": "getStudentCoursesProductId",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/student/lessons/{id}/progress": {
+      "post": {
+        "tags": [
+          "Aluno"
+        ],
+        "summary": "Marcar aula como concluída ou não",
+        "operationId": "postStudentLessonsIdProgress",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DoneInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/student/purchases": {
+      "get": {
+        "tags": [
+          "Aluno"
+        ],
+        "summary": "Compras do aluno",
+        "operationId": "getStudentPurchases",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Purchase"
+                  }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/student/purchases/{id}/refund": {
+      "post": {
+        "tags": [
+          "Aluno"
+        ],
+        "summary": "Pedir reembolso (202)",
+        "operationId": "postStudentPurchasesIdRefund",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Sem conteúdo"
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundRequestInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/overview": {
+      "get": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Indicadores em tempo real, fila de trabalho e saúde dos métodos",
+        "operationId": "getAdminOverview",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOverview"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/sellers": {
+      "get": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Produtores",
+        "operationId": "getAdminSellers",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PaginatedBase"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SellerRow"
+                          }
+                        }
+                      },
+                      "required": [
+                        "items"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/sellers/{id}": {
+      "patch": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Alterar estado ou taxa do produtor",
+        "operationId": "patchAdminSellersId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SellerRow"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SellerPatch"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/kyc": {
+      "get": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Fila de verificação de identidade",
+        "operationId": "getAdminKyc",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KycRequest"
+                  }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/kyc/{id}/decision": {
+      "post": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Aprovar, pedir correção ou rejeitar",
+        "operationId": "postAdminKycIdDecision",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sem conteúdo"
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KycDecisionInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/moderation": {
+      "get": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Produtos à espera de revisão",
+        "operationId": "getAdminModeration",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModerationItem"
+                  }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/moderation/{id}/decision": {
+      "post": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Aprovar ou recusar um produto",
+        "operationId": "postAdminModerationIdDecision",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sem conteúdo"
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/transactions": {
+      "get": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Todas as transações com risco e rota",
+        "operationId": "getAdminTransactions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PaginatedBase"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/AdminTransaction"
+                          }
+                        }
+                      },
+                      "required": [
+                        "items"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/risk": {
+      "get": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Regras antifraude, listas de bloqueio e suspeitas",
+        "operationId": "getAdminRisk",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskOverview"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/risk/rules/{id}": {
+      "patch": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Ligar ou desligar uma regra",
+        "operationId": "patchAdminRiskRulesId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sem conteúdo"
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnabledInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/payouts": {
+      "get": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Saques para aprovar e resumo { summary, items: Payout[] }",
+        "operationId": "getAdminPayouts",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Inline"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/payouts/batch": {
+      "post": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Aprovar ou rejeitar saques em lote",
+        "operationId": "postAdminPayoutsBatch",
+        "responses": {
+          "204": {
+            "description": "Sem conteúdo"
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchDecisionInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/disputes": {
+      "get": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Chargebacks e reclamações",
+        "operationId": "getAdminDisputes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Dispute"
+                  }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/disputes/{id}/evidence": {
+      "post": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Enviar provas ao adquirente (202)",
+        "operationId": "postAdminDisputesIdEvidence",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Sem conteúdo"
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/gateways": {
+      "get": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Fornecedores de pagamento e encaminhamento { gateways: Gateway[], routing: RoutingRule[], incident? }",
+        "operationId": "getAdminGateways",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Inline"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/fees": {
+      "get": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Planos, prazos de libertação e regras de saque",
+        "operationId": "getAdminFees",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeesConfig"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/team": {
+      "get": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Equipa e matriz de permissões { members: StaffMember[], roles }",
+        "operationId": "getAdminTeam",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Inline"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/audit-logs": {
+      "get": {
+        "tags": [
+          "Backoffice"
+        ],
+        "summary": "Registo de auditoria",
+        "operationId": "getAdminAuditLogs",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PaginatedBase"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/AuditLog"
+                          }
+                        }
+                      },
+                      "required": [
+                        "items"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro de validação, autorização ou estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token devolvido por /auth/login ou /auth/register"
+      }
+    },
+    "schemas": {
+      "ID": {
+        "type": "string",
+        "description": "Contrato da API do VendAqui.\n\nEstes tipos são a fonte de verdade entre o frontend e o backend. O ficheiro docs/openapi.yaml descreve os mesmos objetos para quem implementa o backend. Valores monetários vêm em meticais (MZN) como número decimal; datas em ISO 8601."
+      },
+      "ISODate": {
+        "type": "string"
+      },
+      "Money": {
+        "type": "number"
+      },
+      "Role": {
+        "type": "string",
+        "enum": [
+          "seller",
+          "admin",
+          "student"
+        ]
+      },
+      "PaymentMethod": {
+        "type": "string",
+        "enum": [
+          "applepay",
+          "googlepay",
+          "mpesa",
+          "emola",
+          "card"
+        ]
+      },
+      "PayoutDestinationKind": {
+        "type": "string",
+        "enum": [
+          "mpesa",
+          "emola",
+          "bank"
+        ]
+      },
+      "Period": {
+        "type": "string",
+        "enum": [
+          "today",
+          "7d",
+          "30d",
+          "12m"
+        ]
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "business": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "nuit": {
+                "type": "string"
+              },
+              "kycStatus": {
+                "$ref": "#/components/schemas/KycStatus"
+              }
+            },
+            "required": [
+              "name",
+              "nuit",
+              "kycStatus"
+            ],
+            "additionalProperties": false,
+            "description": "Só para produtores"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role"
+        ],
+        "additionalProperties": false
+      },
+      "KycStatus": {
+        "type": "string",
+        "enum": [
+          "not_started",
+          "pending",
+          "approved",
+          "changes_requested",
+          "rejected"
+        ]
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "token",
+          "user"
+        ],
+        "additionalProperties": false
+      },
+      "LoginInput": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "additionalProperties": false
+      },
+      "RegisterInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "individual",
+              "company"
+            ]
+          },
+          "businessName": {
+            "type": "string"
+          },
+          "nuit": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "payoutMethod": {
+            "$ref": "#/components/schemas/PayoutDestinationKind"
+          },
+          "payoutPhone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "phone",
+          "password",
+          "kind",
+          "businessName",
+          "nuit",
+          "category",
+          "payoutMethod"
+        ],
+        "additionalProperties": false
+      },
+      "ProductType": {
+        "type": "string",
+        "enum": [
+          "course",
+          "ebook",
+          "mentoring",
+          "subscription",
+          "event"
+        ]
+      },
+      "ProductStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "in_review",
+          "draft",
+          "suspended"
+        ]
+      },
+      "Cover": {
+        "type": "string",
+        "enum": [
+          "orange",
+          "blue",
+          "green",
+          "purple",
+          "teal",
+          "red",
+          "slate"
+        ]
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProductType"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "recurring": {
+            "type": "string",
+            "enum": [
+              "monthly",
+              "yearly"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProductStatus"
+          },
+          "cover": {
+            "$ref": "#/components/schemas/Cover"
+          },
+          "sales": {
+            "type": "number"
+          },
+          "revenue": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "conversion": {
+            "type": "number"
+          },
+          "students": {
+            "type": "number"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/ISODate"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "type",
+          "price",
+          "status",
+          "cover",
+          "sales",
+          "revenue",
+          "conversion",
+          "students",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "Offer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "sales": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price",
+          "slug",
+          "active",
+          "sales"
+        ],
+        "additionalProperties": false
+      },
+      "CheckoutSettings": {
+        "type": "object",
+        "properties": {
+          "accent": {
+            "type": "string",
+            "enum": [
+              "orange",
+              "blue",
+              "green",
+              "purple",
+              "red",
+              "ink"
+            ]
+          },
+          "ctaLabel": {
+            "type": "string"
+          },
+          "timer": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "minutes": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "enabled",
+              "minutes"
+            ],
+            "additionalProperties": false
+          },
+          "orderBump": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "productId": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "title": {
+                "type": "string"
+              },
+              "price": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "originalPrice": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "enabled",
+              "title",
+              "price",
+              "originalPrice",
+              "description"
+            ],
+            "additionalProperties": false
+          },
+          "testimonial": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "text": {
+                "type": "string"
+              },
+              "author": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "enabled",
+              "text",
+              "author"
+            ],
+            "additionalProperties": false
+          },
+          "askNuit": {
+            "type": "boolean"
+          },
+          "methods": {
+            "type": "object",
+            "properties": {
+              "applepay": {
+                "type": "boolean"
+              },
+              "googlepay": {
+                "type": "boolean"
+              },
+              "mpesa": {
+                "type": "boolean"
+              },
+              "emola": {
+                "type": "boolean"
+              },
+              "card": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "applepay",
+              "googlepay",
+              "mpesa",
+              "emola",
+              "card"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "accent",
+          "ctaLabel",
+          "timer",
+          "orderBump",
+          "testimonial",
+          "askNuit",
+          "methods"
+        ],
+        "additionalProperties": false
+      },
+      "ProductDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProductType"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "recurring": {
+            "type": "string",
+            "enum": [
+              "monthly",
+              "yearly"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProductStatus"
+          },
+          "cover": {
+            "$ref": "#/components/schemas/Cover"
+          },
+          "sales": {
+            "type": "number"
+          },
+          "revenue": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "conversion": {
+            "type": "number"
+          },
+          "students": {
+            "type": "number"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/ISODate"
+          },
+          "description": {
+            "type": "string"
+          },
+          "guaranteeDays": {
+            "type": "number",
+            "enum": [
+              7,
+              15,
+              30
+            ]
+          },
+          "salesPageUrl": {
+            "type": "string"
+          },
+          "checkoutUrl": {
+            "type": "string"
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Offer"
+            }
+          },
+          "checkout": {
+            "$ref": "#/components/schemas/CheckoutSettings"
+          },
+          "upsell": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "title": {
+                "type": "string"
+              },
+              "price": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "acceptRate": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "enabled",
+              "title",
+              "price",
+              "acceptRate"
+            ],
+            "additionalProperties": false
+          },
+          "affiliate": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "autoApprove": {
+                "type": "boolean"
+              },
+              "commissionPercent": {
+                "type": "number"
+              },
+              "cookieDays": {
+                "type": "number"
+              },
+              "attribution": {
+                "type": "string",
+                "enum": [
+                  "last_click",
+                  "first_click"
+                ]
+              },
+              "materialsUrl": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "enabled",
+              "autoApprove",
+              "commissionPercent",
+              "cookieDays",
+              "attribution"
+            ],
+            "additionalProperties": false
+          },
+          "bumpStats": {
+            "type": "object",
+            "properties": {
+              "acceptRate": {
+                "type": "number"
+              },
+              "extraRevenue30d": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "acceptRate",
+              "extraRevenue30d"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "affiliate",
+          "bumpStats",
+          "checkout",
+          "checkoutUrl",
+          "conversion",
+          "cover",
+          "createdAt",
+          "description",
+          "guaranteeDays",
+          "id",
+          "name",
+          "offers",
+          "price",
+          "revenue",
+          "sales",
+          "slug",
+          "status",
+          "students",
+          "type",
+          "upsell"
+        ],
+        "additionalProperties": false
+      },
+      "ProductInput": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ProductType"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "priceUsd": {
+            "type": "number"
+          },
+          "recurring": {
+            "type": "string",
+            "enum": [
+              "monthly",
+              "yearly"
+            ]
+          },
+          "guaranteeDays": {
+            "type": "number",
+            "enum": [
+              7,
+              15,
+              30
+            ]
+          },
+          "delivery": {
+            "type": "string",
+            "enum": [
+              "members_area",
+              "file",
+              "external_link"
+            ]
+          },
+          "deliveryUrl": {
+            "type": "string"
+          },
+          "welcomeMessage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description",
+          "category",
+          "price",
+          "guaranteeDays",
+          "delivery",
+          "welcomeMessage"
+        ],
+        "additionalProperties": false
+      },
+      "SaleStatus": {
+        "type": "string",
+        "enum": [
+          "approved",
+          "pending",
+          "declined",
+          "refunded",
+          "chargeback",
+          "expired"
+        ]
+      },
+      "Sale": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/ISODate"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SaleStatus"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "product": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "buyer": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "email",
+              "phone",
+              "city"
+            ],
+            "additionalProperties": false
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "fee": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "affiliate": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "commission": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "name",
+              "commission"
+            ],
+            "additionalProperties": false
+          },
+          "net": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "orderBump": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "status",
+          "method",
+          "product",
+          "buyer",
+          "amount",
+          "fee",
+          "net",
+          "orderBump"
+        ],
+        "additionalProperties": false
+      },
+      "SaleEvent": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "$ref": "#/components/schemas/ISODate"
+          },
+          "label": {
+            "type": "string"
+          },
+          "tone": {
+            "type": "string",
+            "enum": [
+              "neutral",
+              "info",
+              "success",
+              "warning",
+              "danger"
+            ]
+          }
+        },
+        "required": [
+          "at",
+          "label",
+          "tone"
+        ],
+        "additionalProperties": false
+      },
+      "SaleDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/ISODate"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SaleStatus"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "product": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "buyer": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "email",
+              "phone",
+              "city"
+            ],
+            "additionalProperties": false
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "fee": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "affiliate": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "commission": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "name",
+              "commission"
+            ],
+            "additionalProperties": false
+          },
+          "net": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "orderBump": {
+            "type": "boolean"
+          },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaleEvent"
+            }
+          },
+          "tracking": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "utmCampaign": {
+                "type": "string"
+              },
+              "pixel": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "source"
+            ],
+            "additionalProperties": false
+          },
+          "device": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "buyer",
+          "createdAt",
+          "device",
+          "fee",
+          "id",
+          "method",
+          "net",
+          "orderBump",
+          "product",
+          "status",
+          "timeline",
+          "tracking"
+        ],
+        "additionalProperties": false
+      },
+      "SalesQuery": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SaleStatus"
+              },
+              {
+                "type": "string",
+                "const": ""
+              }
+            ]
+          },
+          "method": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentMethod"
+              },
+              {
+                "type": "string",
+                "const": ""
+              }
+            ]
+          },
+          "productId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "string",
+                "const": ""
+              }
+            ]
+          },
+          "page": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SalesPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sale"
+            }
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "approved": {
+                "type": "number"
+              },
+              "pending": {
+                "type": "number"
+              },
+              "declined": {
+                "type": "number"
+              },
+              "refunded": {
+                "type": "number"
+              },
+              "chargeback": {
+                "type": "number"
+              },
+              "expired": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "approved",
+              "pending",
+              "declined",
+              "refunded",
+              "chargeback",
+              "expired"
+            ],
+            "additionalProperties": false
+          },
+          "approvedAmount": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "approvedAmount",
+          "counts",
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "additionalProperties": false
+      },
+      "Balance": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "pending": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "reserve": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "nextRelease": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "$ref": "#/components/schemas/ISODate"
+              },
+              "amount": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "date",
+              "amount"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "available",
+          "pending",
+          "reserve"
+        ],
+        "additionalProperties": false
+      },
+      "Dashboard": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/Period"
+          },
+          "revenueNet": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "approvedSales": {
+            "type": "number"
+          },
+          "affiliateSales": {
+            "type": "number"
+          },
+          "avgTicket": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "conversion": {
+            "type": "number"
+          },
+          "refundRate": {
+            "type": "number"
+          },
+          "deltas": {
+            "type": "object",
+            "properties": {
+              "revenue": {
+                "type": "number"
+              },
+              "sales": {
+                "type": "number"
+              },
+              "ticket": {
+                "type": "number"
+              },
+              "conversion": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "revenue",
+              "sales",
+              "ticket",
+              "conversion"
+            ],
+            "additionalProperties": false
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "$ref": "#/components/schemas/Money"
+                }
+              },
+              "required": [
+                "label",
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "salesSpark": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "method": {
+                  "$ref": "#/components/schemas/PaymentMethod"
+                },
+                "share": {
+                  "type": "number"
+                },
+                "approvalRate": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "method",
+                "share",
+                "approvalRate"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "topProducts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "productId": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "$ref": "#/components/schemas/ProductType"
+                },
+                "cover": {
+                  "$ref": "#/components/schemas/Cover"
+                },
+                "share": {
+                  "type": "number"
+                },
+                "revenue": {
+                  "$ref": "#/components/schemas/Money"
+                }
+              },
+              "required": [
+                "productId",
+                "name",
+                "type",
+                "cover",
+                "share",
+                "revenue"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "balance": {
+            "$ref": "#/components/schemas/Balance"
+          },
+          "plaque": {
+            "type": "object",
+            "properties": {
+              "goal": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "total": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "goal",
+              "total"
+            ],
+            "additionalProperties": false
+          },
+          "onboarding": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "done": {
+                  "type": "boolean"
+                },
+                "href": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "label",
+                "done",
+                "href"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "salesToday": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "period",
+          "revenueNet",
+          "approvedSales",
+          "affiliateSales",
+          "avgTicket",
+          "conversion",
+          "refundRate",
+          "deltas",
+          "series",
+          "salesSpark",
+          "methods",
+          "topProducts",
+          "balance",
+          "plaque",
+          "onboarding",
+          "salesToday"
+        ],
+        "additionalProperties": false
+      },
+      "Subscription": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "subscriber": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "email"
+            ],
+            "additionalProperties": false
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "since": {
+            "$ref": "#/components/schemas/ISODate"
+          },
+          "nextCharge": {
+            "$ref": "#/components/schemas/ISODate"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "past_due",
+              "canceled"
+            ]
+          },
+          "totalPaid": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "id",
+          "subscriber",
+          "method",
+          "since",
+          "status",
+          "totalPaid"
+        ],
+        "additionalProperties": false
+      },
+      "SubscriptionsSummary": {
+        "type": "object",
+        "properties": {
+          "mrr": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "mrrDelta": {
+            "type": "number"
+          },
+          "active": {
+            "type": "number"
+          },
+          "newThisMonth": {
+            "type": "number"
+          },
+          "churn": {
+            "type": "number"
+          },
+          "churned30d": {
+            "type": "number"
+          },
+          "pendingRenewals": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "mrr",
+          "mrrDelta",
+          "active",
+          "newThisMonth",
+          "churn",
+          "churned30d",
+          "pendingRenewals"
+        ],
+        "additionalProperties": false
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "purchases": {
+            "type": "number"
+          },
+          "totalSpent": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "lastPurchaseAt": {
+            "$ref": "#/components/schemas/ISODate"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "city",
+          "purchases",
+          "totalSpent",
+          "lastPurchaseAt"
+        ],
+        "additionalProperties": false
+      },
+      "CustomersSummary": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "repeatRate": {
+            "type": "number"
+          },
+          "avgValue": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "topCity": {
+            "type": "string"
+          },
+          "topCityShare": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "total",
+          "repeatRate",
+          "avgValue",
+          "topCity",
+          "topCityShare"
+        ],
+        "additionalProperties": false
+      },
+      "Affiliate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "sales": {
+            "type": "number"
+          },
+          "commissions": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "conversion": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "suspended"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "sales",
+          "commissions",
+          "conversion",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "AffiliateRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "audience": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "audience",
+          "productName"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceProduct": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "producer": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProductType"
+          },
+          "cover": {
+            "$ref": "#/components/schemas/Cover"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "commissionPercent": {
+            "type": "number"
+          },
+          "rating": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "producer",
+          "type",
+          "cover",
+          "price",
+          "commissionPercent",
+          "rating"
+        ],
+        "additionalProperties": false
+      },
+      "AffiliatesOverview": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "object",
+            "properties": {
+              "sales": {
+                "type": "number"
+              },
+              "salesShare": {
+                "type": "number"
+              },
+              "commissionsPaid": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "active": {
+                "type": "number"
+              },
+              "defaultCommission": {
+                "type": "number"
+              },
+              "cookieDays": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "sales",
+              "salesShare",
+              "commissionsPaid",
+              "active",
+              "defaultCommission",
+              "cookieDays"
+            ],
+            "additionalProperties": false
+          },
+          "affiliates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Affiliate"
+            }
+          },
+          "requests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AffiliateRequest"
+            }
+          },
+          "marketplace": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceProduct"
+            }
+          }
+        },
+        "required": [
+          "summary",
+          "affiliates",
+          "requests",
+          "marketplace"
+        ],
+        "additionalProperties": false
+      },
+      "Coupon": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "code": {
+            "type": "string"
+          },
+          "discount": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "percent",
+                  "fixed"
+                ]
+              },
+              "value": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "uses": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/ISODate"
+          },
+          "products": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "all"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ID"
+                }
+              }
+            ]
+          },
+          "productsLabel": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "draft",
+              "expired"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "discount",
+          "uses",
+          "products",
+          "productsLabel",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "CouponInput": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "percent",
+              "fixed"
+            ]
+          },
+          "value": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/ISODate"
+          },
+          "productId": {
+            "$ref": "#/components/schemas/ID"
+          }
+        },
+        "required": [
+          "code",
+          "kind",
+          "value"
+        ],
+        "additionalProperties": false
+      },
+      "RecoveryAutomation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "sms",
+              "whatsapp",
+              "email"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "delay": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "channel",
+          "title",
+          "delay",
+          "message",
+          "enabled"
+        ],
+        "additionalProperties": false
+      },
+      "AbandonedCart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "buyer": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "phone"
+            ],
+            "additionalProperties": false
+          },
+          "productName": {
+            "type": "string"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "buyer",
+          "productName",
+          "amount",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "RecoveryOverview": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "object",
+            "properties": {
+              "abandoned": {
+                "type": "number"
+              },
+              "recovered": {
+                "type": "number"
+              },
+              "recoveredAmount": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "rate": {
+                "type": "number"
+              },
+              "rateDelta": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "abandoned",
+              "recovered",
+              "recoveredAmount",
+              "rate",
+              "rateDelta"
+            ],
+            "additionalProperties": false
+          },
+          "automations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecoveryAutomation"
+            }
+          },
+          "carts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbandonedCart"
+            }
+          }
+        },
+        "required": [
+          "summary",
+          "automations",
+          "carts"
+        ],
+        "additionalProperties": false
+      },
+      "Lesson": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "title": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "string"
+          },
+          "freePreview": {
+            "type": "boolean"
+          },
+          "done": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "duration"
+        ],
+        "additionalProperties": false
+      },
+      "CourseModule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "title": {
+            "type": "string"
+          },
+          "lessons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Lesson"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "lessons"
+        ],
+        "additionalProperties": false
+      },
+      "Course": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "title": {
+            "type": "string"
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourseModule"
+            }
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "activeStudents": {
+                "type": "number"
+              },
+              "completion": {
+                "type": "number"
+              },
+              "certificates": {
+                "type": "number"
+              },
+              "openQuestions": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "activeStudents",
+              "completion",
+              "certificates",
+              "openQuestions"
+            ],
+            "additionalProperties": false
+          },
+          "progress": {
+            "type": "object",
+            "properties": {
+              "done": {
+                "type": "number"
+              },
+              "total": {
+                "type": "number"
+              },
+              "percent": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "done",
+              "total",
+              "percent"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "productId",
+          "title",
+          "modules"
+        ],
+        "additionalProperties": false
+      },
+      "StatementEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "at": {
+            "$ref": "#/components/schemas/ISODate"
+          },
+          "description": {
+            "type": "string"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "description",
+          "amount"
+        ],
+        "additionalProperties": false
+      },
+      "PayoutAccount": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PayoutDestinationKind"
+          },
+          "label": {
+            "type": "string"
+          },
+          "masked": {
+            "type": "string"
+          },
+          "fee": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "eta": {
+            "type": "string"
+          },
+          "primary": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "masked",
+          "fee",
+          "eta",
+          "primary"
+        ],
+        "additionalProperties": false
+      },
+      "Payout": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "requestedAt": {
+            "$ref": "#/components/schemas/ISODate"
+          },
+          "seller": {
+            "type": "string"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/PayoutDestinationKind"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "processing",
+              "paid",
+              "failed",
+              "rejected"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "requestedAt",
+          "destination",
+          "amount",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "Finance": {
+        "type": "object",
+        "properties": {
+          "balance": {
+            "$ref": "#/components/schemas/Balance"
+          },
+          "statement": {
+            "$ref": "#/components/schemas/PaginatedStatementEntry"
+          },
+          "payouts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Payout"
+            }
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PayoutAccount"
+            }
+          },
+          "releaseRules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "method": {
+                  "$ref": "#/components/schemas/PaymentMethod"
+                },
+                "days": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "method",
+                "days"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "reservePercent": {
+            "type": "number"
+          },
+          "reserveDays": {
+            "type": "number"
+          },
+          "fee": {
+            "type": "object",
+            "properties": {
+              "percent": {
+                "type": "number"
+              },
+              "fixed": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "percent",
+              "fixed"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "balance",
+          "statement",
+          "payouts",
+          "accounts",
+          "releaseRules",
+          "reservePercent",
+          "reserveDays",
+          "fee"
+        ],
+        "additionalProperties": false
+      },
+      "PaginatedStatementEntry": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatementEntry"
+            }
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "additionalProperties": false
+      },
+      "PayoutInput": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "accountId": {
+            "$ref": "#/components/schemas/ID"
+          }
+        },
+        "required": [
+          "amount",
+          "accountId"
+        ],
+        "additionalProperties": false
+      },
+      "Integration": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "connected": {
+            "type": "boolean"
+          },
+          "color": {
+            "type": "string"
+          },
+          "letter": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "connected",
+          "color",
+          "letter"
+        ],
+        "additionalProperties": false
+      },
+      "Webhook": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "url": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "lastDelivery": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "number"
+              },
+              "at": {
+                "$ref": "#/components/schemas/ISODate"
+              }
+            },
+            "required": [
+              "status",
+              "at"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "events",
+          "lastDelivery"
+        ],
+        "additionalProperties": false
+      },
+      "IntegrationsOverview": {
+        "type": "object",
+        "properties": {
+          "integrations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Integration"
+            }
+          },
+          "apiKeys": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "masked": {
+                  "type": "string"
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "live",
+                    "test"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "label",
+                "masked",
+                "mode"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "webhooks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Webhook"
+            }
+          }
+        },
+        "required": [
+          "integrations",
+          "apiKeys",
+          "webhooks"
+        ],
+        "additionalProperties": false
+      },
+      "TeamMember": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "access": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "access"
+        ],
+        "additionalProperties": false
+      },
+      "Account": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "type": "object",
+            "properties": {
+              "businessName": {
+                "type": "string"
+              },
+              "supportEmail": {
+                "type": "string"
+              },
+              "supportWhatsapp": {
+                "type": "string"
+              },
+              "website": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "businessName",
+              "supportEmail",
+              "supportWhatsapp",
+              "website"
+            ],
+            "additionalProperties": false
+          },
+          "verification": {
+            "type": "object",
+            "properties": {
+              "level": {
+                "type": "number",
+                "enum": [
+                  1,
+                  2
+                ]
+              },
+              "verifiedAt": {
+                "$ref": "#/components/schemas/ISODate"
+              },
+              "documents": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "$ref": "#/components/schemas/KycStatus"
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "status",
+                    "note"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "limits": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "level",
+              "documents",
+              "limits"
+            ],
+            "additionalProperties": false
+          },
+          "notifications": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "channel": {
+                  "type": "string"
+                },
+                "enabled": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "key",
+                "label",
+                "channel",
+                "enabled"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "security": {
+            "type": "object",
+            "properties": {
+              "twoFactor": {
+                "type": "boolean"
+              },
+              "confirmLargePayouts": {
+                "type": "boolean"
+              },
+              "sessions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "device": {
+                      "type": "string"
+                    },
+                    "city": {
+                      "type": "string"
+                    },
+                    "lastSeen": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "device",
+                    "city",
+                    "lastSeen"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "twoFactor",
+              "confirmLargePayouts",
+              "sessions"
+            ],
+            "additionalProperties": false
+          },
+          "team": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TeamMember"
+            }
+          }
+        },
+        "required": [
+          "profile",
+          "verification",
+          "notifications",
+          "security",
+          "team"
+        ],
+        "additionalProperties": false
+      },
+      "PublicCheckout": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "product": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "name": {
+                "type": "string"
+              },
+              "subtitle": {
+                "type": "string"
+              },
+              "price": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "cover": {
+                "$ref": "#/components/schemas/Cover"
+              },
+              "type": {
+                "$ref": "#/components/schemas/ProductType"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "subtitle",
+              "price",
+              "cover",
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          "seller": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "nuit": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "nuit"
+            ],
+            "additionalProperties": false
+          },
+          "guaranteeDays": {
+            "type": "number"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/CheckoutSettings"
+          }
+        },
+        "required": [
+          "slug",
+          "product",
+          "seller",
+          "guaranteeDays",
+          "settings"
+        ],
+        "additionalProperties": false
+      },
+      "OrderInput": {
+        "type": "object",
+        "properties": {
+          "buyer": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "nuit": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "email",
+              "phone"
+            ],
+            "additionalProperties": false
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "walletPhone": {
+            "type": "string",
+            "description": "Número da carteira para M-Pesa e e-Mola"
+          },
+          "cardToken": {
+            "type": "string",
+            "description": "Token do cartão devolvido pelo adquirente; o frontend nunca envia o número do cartão à API"
+          },
+          "orderBump": {
+            "type": "boolean"
+          },
+          "coupon": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "buyer",
+          "method",
+          "orderBump"
+        ],
+        "additionalProperties": false
+      },
+      "OrderStatus": {
+        "type": "string",
+        "enum": [
+          "awaiting_confirmation",
+          "approved",
+          "declined",
+          "expired"
+        ]
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "total": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/Money"
+                }
+              },
+              "required": [
+                "name",
+                "amount"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "buyerEmail": {
+            "type": "string"
+          },
+          "buyerPhone": {
+            "type": "string"
+          },
+          "guaranteeUntil": {
+            "$ref": "#/components/schemas/ISODate"
+          },
+          "accessUrl": {
+            "type": "string"
+          },
+          "upsell": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "price": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "originalPrice": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "title",
+              "description",
+              "price",
+              "originalPrice"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "method",
+          "total",
+          "items",
+          "buyerEmail",
+          "buyerPhone",
+          "guaranteeUntil"
+        ],
+        "additionalProperties": false
+      },
+      "CouponCheck": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "percent": {
+            "type": "number"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "valid"
+        ],
+        "additionalProperties": false
+      },
+      "LibraryItem": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProductType"
+          },
+          "cover": {
+            "$ref": "#/components/schemas/Cover"
+          },
+          "progress": {
+            "type": "number"
+          },
+          "subtitle": {
+            "type": "string"
+          },
+          "nextLessonId": {
+            "$ref": "#/components/schemas/ID"
+          }
+        },
+        "required": [
+          "productId",
+          "name",
+          "type",
+          "cover",
+          "progress",
+          "subtitle"
+        ],
+        "additionalProperties": false
+      },
+      "Library": {
+        "type": "object",
+        "properties": {
+          "studentName": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LibraryItem"
+            }
+          },
+          "recommended": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "price": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "originalPrice": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "price",
+              "originalPrice",
+              "slug",
+              "note"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "studentName",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "Purchase": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "orderId": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "date": {
+            "$ref": "#/components/schemas/ISODate"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SaleStatus"
+          },
+          "refundableUntil": {
+            "$ref": "#/components/schemas/ISODate"
+          }
+        },
+        "required": [
+          "id",
+          "orderId",
+          "productName",
+          "date",
+          "method",
+          "amount",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "RefundRequestInput": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "AdminOverview": {
+        "type": "object",
+        "properties": {
+          "live": {
+            "type": "object",
+            "properties": {
+              "gmvToday": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "gmvDelta": {
+                "type": "number"
+              },
+              "txToday": {
+                "type": "number"
+              },
+              "txLastHour": {
+                "type": "number"
+              },
+              "approval": {
+                "type": "number"
+              },
+              "platformRevenueToday": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "sellersSelling": {
+                "type": "number"
+              },
+              "sellersActive": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "gmvToday",
+              "gmvDelta",
+              "txToday",
+              "txLastHour",
+              "approval",
+              "platformRevenueToday",
+              "sellersSelling",
+              "sellersActive"
+            ],
+            "additionalProperties": false
+          },
+          "kpis": {
+            "type": "object",
+            "properties": {
+              "gmv30d": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "gmvDelta": {
+                "type": "number"
+              },
+              "revenue30d": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "revenueDelta": {
+                "type": "number"
+              },
+              "chargebackRate": {
+                "type": "number"
+              },
+              "owedToSellers": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "gmv30d",
+              "gmvDelta",
+              "revenue30d",
+              "revenueDelta",
+              "chargebackRate",
+              "owedToSellers"
+            ],
+            "additionalProperties": false
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "gmv": {
+                  "$ref": "#/components/schemas/Money"
+                },
+                "revenue": {
+                  "$ref": "#/components/schemas/Money"
+                }
+              },
+              "required": [
+                "label",
+                "gmv",
+                "revenue"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "queue": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "enum": [
+                    "kyc",
+                    "payouts",
+                    "moderation",
+                    "disputes"
+                  ]
+                },
+                "count": {
+                  "type": "number"
+                },
+                "note": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "count",
+                "note"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "gateways": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GatewayHealth"
+            }
+          },
+          "topSellers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SellerRow"
+            }
+          }
+        },
+        "required": [
+          "live",
+          "kpis",
+          "series",
+          "queue",
+          "gateways",
+          "topSellers"
+        ],
+        "additionalProperties": false
+      },
+      "GatewayHealth": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "operational",
+              "degraded",
+              "down"
+            ]
+          },
+          "approval": {
+            "type": "number"
+          },
+          "latencyMs": {
+            "type": "number"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "method",
+          "name",
+          "status",
+          "approval",
+          "latencyMs"
+        ],
+        "additionalProperties": false
+      },
+      "SellerRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "business": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "gmv30d": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "buyers": {
+            "type": "number"
+          },
+          "chargebackRate": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "in_review",
+              "blocked"
+            ]
+          },
+          "plan": {
+            "type": "string"
+          },
+          "nuit": {
+            "type": "string"
+          },
+          "since": {
+            "type": "string"
+          },
+          "feePercent": {
+            "type": "number"
+          },
+          "feeFixed": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "id",
+          "business",
+          "owner",
+          "category",
+          "gmv30d",
+          "buyers",
+          "chargebackRate",
+          "status",
+          "plan",
+          "nuit",
+          "since",
+          "feePercent",
+          "feeFixed"
+        ],
+        "additionalProperties": false
+      },
+      "KycRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "business": {
+            "type": "string"
+          },
+          "waitingHours": {
+            "type": "number"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "individual",
+              "company"
+            ]
+          },
+          "category": {
+            "type": "string"
+          },
+          "faceMatch": {
+            "type": "number"
+          },
+          "nameMatch": {
+            "type": "string",
+            "enum": [
+              "yes",
+              "partial",
+              "no"
+            ]
+          },
+          "nuitValid": {
+            "type": "boolean"
+          },
+          "riskCategory": {
+            "type": "string",
+            "enum": [
+              "low",
+              "high"
+            ]
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "declared": {
+            "type": "object",
+            "properties": {
+              "bi": {
+                "type": "string"
+              },
+              "nuit": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "wallet": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "bi",
+              "nuit",
+              "city",
+              "wallet"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "business",
+          "waitingHours",
+          "kind",
+          "category",
+          "faceMatch",
+          "nameMatch",
+          "nuitValid",
+          "riskCategory",
+          "documents",
+          "declared"
+        ],
+        "additionalProperties": false
+      },
+      "KycDecision": {
+        "type": "string",
+        "enum": [
+          "approve",
+          "request_changes",
+          "reject"
+        ]
+      },
+      "ModerationItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "seller": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProductType"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "cover": {
+            "$ref": "#/components/schemas/Cover"
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "productName",
+          "seller",
+          "type",
+          "price",
+          "cover",
+          "flags"
+        ],
+        "additionalProperties": false
+      },
+      "AdminTransaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/ISODate"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SaleStatus"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "product": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "buyer": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "email",
+              "phone",
+              "city"
+            ],
+            "additionalProperties": false
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "fee": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "affiliate": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "commission": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "name",
+              "commission"
+            ],
+            "additionalProperties": false
+          },
+          "net": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "orderBump": {
+            "type": "boolean"
+          },
+          "seller": {
+            "type": "string"
+          },
+          "risk": {
+            "type": "number"
+          },
+          "route": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "buyer",
+          "createdAt",
+          "fee",
+          "id",
+          "method",
+          "net",
+          "orderBump",
+          "product",
+          "risk",
+          "route",
+          "seller",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "RiskOverview": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "object",
+            "properties": {
+              "blockedToday": {
+                "type": "number"
+              },
+              "blockedAmount": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "manualReview": {
+                "type": "number"
+              },
+              "falsePositiveRate": {
+                "type": "number"
+              },
+              "chargebacksAvoided": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "blockedToday",
+              "blockedAmount",
+              "manualReview",
+              "falsePositiveRate",
+              "chargebacksAvoided"
+            ],
+            "additionalProperties": false
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "icon": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "description",
+                "action",
+                "enabled",
+                "icon"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "blocklist": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "phone",
+                    "bin",
+                    "email"
+                  ]
+                },
+                "value": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "value",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "flagged": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminTransaction"
+            }
+          }
+        },
+        "required": [
+          "summary",
+          "rules",
+          "blocklist",
+          "flagged"
+        ],
+        "additionalProperties": false
+      },
+      "Dispute": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "chargeback",
+              "late_refund",
+              "complaint"
+            ]
+          },
+          "saleId": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "seller": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "deadline": {
+            "type": "string"
+          },
+          "urgent": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "won",
+              "lost",
+              "resolved"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "saleId",
+          "seller",
+          "reason",
+          "method",
+          "amount",
+          "urgent",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "Gateway": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "method": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentMethod"
+              },
+              {
+                "type": "string",
+                "const": "bank"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "operational",
+              "degraded"
+            ]
+          },
+          "approval": {
+            "type": "number"
+          },
+          "costPercent": {
+            "type": "number"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "method",
+          "name",
+          "description",
+          "status",
+          "approval",
+          "costPercent",
+          "enabled"
+        ],
+        "additionalProperties": false
+      },
+      "RoutingRule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "route": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "condition",
+          "route"
+        ],
+        "additionalProperties": false
+      },
+      "FeePlan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "fixed": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "sellers": {
+            "type": "number"
+          },
+          "perks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isDefault": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "percent",
+          "fixed",
+          "sellers",
+          "perks",
+          "isDefault"
+        ],
+        "additionalProperties": false
+      },
+      "FeesConfig": {
+        "type": "object",
+        "properties": {
+          "plans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeePlan"
+            }
+          },
+          "release": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "method": {
+                  "$ref": "#/components/schemas/PaymentMethod"
+                },
+                "days": {
+                  "type": "number"
+                },
+                "reservePercent": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "method",
+                "days",
+                "reservePercent"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "payouts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "label",
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "plans",
+          "release",
+          "payouts"
+        ],
+        "additionalProperties": false
+      },
+      "StaffMember": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "twoFactor": {
+            "type": "boolean"
+          },
+          "lastSeen": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "twoFactor",
+          "lastSeen"
+        ],
+        "additionalProperties": false
+      },
+      "AuditLog": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "at": {
+            "type": "string"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "actorRole": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "ip": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "actor",
+          "actorRole",
+          "action",
+          "target",
+          "ip"
+        ],
+        "additionalProperties": false
+      },
+      "PaginatedBase": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "total"
+        ]
+      },
+      "Inline": {
+        "type": "object",
+        "description": "Objeto descrito no resumo da operação; ver src/api/endpoints.ts."
+      },
+      "DecisionInput": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject"
+            ]
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "KycDecisionInput": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/KycDecision"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "EnabledInput": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ]
+      },
+      "DoneInput": {
+        "type": "object",
+        "properties": {
+          "done": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "done"
+        ]
+      },
+      "CodeInput": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "NoteInput": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ]
+      },
+      "BatchDecisionInput": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject"
+            ]
+          }
+        },
+        "required": [
+          "ids",
+          "decision"
+        ]
+      },
+      "SellerPatch": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "in_review",
+              "blocked"
+            ]
+          },
+          "feePercent": {
+            "type": "number"
+          },
+          "feeFixed": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  }
+}

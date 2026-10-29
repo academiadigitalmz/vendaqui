@@ -1,29 +1,90 @@
 # VendAqui
 
-Protótipo de UI de um gateway de pagamentos para infoprodutos (Moçambique): landing page, checkout,
-área do produtor, área do aluno e backoffice. Uma só página HTML por variante, sem dependências.
+Plataforma para vender cursos, ebooks, mentorias e assinaturas em Moçambique, com pagamentos por
+Apple Pay, Google Pay, M-Pesa, e-Mola e cartão.
 
-## Variantes
+Esta pasta contém o **frontend completo**: landing page, checkout, área do produtor, área do aluno e
+backoffice. Enquanto o backend não existe, a app responde com dados de exemplo no próprio browser
+(MSW), por isso pode ser publicada e testada já.
 
-| Variante | Visual | Caminho no site |
-|---|---|---|
-| `vendaqui` | Design System Academia Digital (laranja) | `/` |
-| `cakto` | Linguagem visual da Cakto (verde) | `/cakto/` |
-| `cakto-laranja` | Linguagem visual da Cakto com o laranja do DS | `/cakto-laranja/` |
+- **Para quem faz o backend:** leia [docs/BACKEND.md](docs/BACKEND.md). O contrato está em
+  [docs/openapi.json](docs/openapi.json).
+- **Protótipo original** (HTML único, referência visual): pasta [prototype/](prototype/).
 
-## Comandos
+## Começar
 
 ```bash
-python3 src/build.py          # gera dist/artifact/*.html e dist/site/**/index.html
-./test/test.sh                # gera e renderiza todas as rotas de cada variante
-python3 -m http.server 8848 --bind 127.0.0.1 --directory dist/site
-cloudflared tunnel --url http://127.0.0.1:8848   # expõe para testes
+npm install
+npm run dev          # http://localhost:5173
 ```
+
+Requer Node 20 ou mais recente.
+
+| Comando | O que faz |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run build` | Gera os visuais, verifica os tipos e cria `dist/` |
+| `npm run typecheck` | Só a verificação de tipos |
+| `npm run openapi` | Regenera `docs/openapi.json` a partir de `src/api/types.ts` |
+| `npm run test:routes` | Abre as 38 rotas num browser (precisa de `vite preview` a correr e do Chrome instalado) |
+| `npm run test:flows` | Percorre compra, saque, reembolso, cupão, KYC e saques em lote num browser |
+
+## Variáveis de ambiente
+
+Copie `.env.example` para `.env.local`.
+
+| Variável | Por omissão | Para quê |
+|---|---|---|
+| `VITE_API_URL` | `/api` | Endereço da API (a app acrescenta `/v1`) |
+| `VITE_USE_MOCKS` | `true` | `false` quando o backend estiver pronto |
+| `VITE_DEFAULT_SKIN` | `cakto-laranja` | Visual inicial: `cakto-laranja`, `cakto` ou `academia` |
+| `VITE_SHOW_SWITCHER` | `true` | Mostra o botão "Áreas do protótipo" para quem está a testar |
+
+## Áreas e rotas
+
+| Área | Rotas |
+|---|---|
+| Público | `/`, `/checkout/:slug`, `/obrigado/:pedido`, `/entrar`, `/criar-conta` |
+| Produtor | `/produtor`, `/produtor/produtos`, `/produtor/vendas`, `/produtor/financeiro`, … |
+| Aluno | `/aluno`, `/aluno/aulas/:aula`, `/aluno/compras` |
+| Backoffice | `/admin`, `/admin/kyc`, `/admin/saques`, `/admin/transacoes`, … |
+
+Em modo simulado, abrir uma área cria uma sessão de demonstração com o papel certo. Com o backend real,
+as áreas exigem login e redirecionam para `/entrar`.
 
 ## Estrutura
 
-- `src/ds-*.css`: tokens e componentes do Design System Academia Digital (extraídos do ficheiro original)
-- `src/app.css`, `src/tokens-extra-*.css`: composições do VendAqui
-- `src/cakto*.css`: tokens e pele da variante Cakto; `cakto-laranja` reaproveita-os com a tabela `RECOLOR` de `src/build.py`
-- `src/*.js`: dados de exemplo, ecrãs e interações (sem framework)
-- `assets/logos/`: originais dos logótipos de pagamento. São marcas dos respetivos donos; confirmar as regras de uso antes de lançar.
+```
+src/
+  api/          contrato (types.ts), cliente HTTP e lista de chamadas
+  mocks/        API simulada (MSW) e dados de exemplo
+  components/   componentes do Design System em React
+  layouts/      molduras do produtor, backoffice e aluno
+  pages/        ecrãs por área (public, seller, student, admin)
+  lib/          formatação, ícones, logótipos, estado da interface
+  styles/       tokens e componentes do Design System Academia Digital e visuais Cakto
+scripts/        geração dos visuais, da especificação OpenAPI e teste das rotas
+docs/           guia do backend e especificação OpenAPI
+prototype/      o protótipo HTML original
+```
+
+## Publicar no Vercel
+
+O projeto já tem `vercel.json`. No Vercel: *Add New → Project → Import* este repositório. O framework
+(Vite), o comando de build e a pasta `dist` são detetados. As rotas do lado do cliente são reescritas para
+`index.html`, por isso links diretos como `/produtor/vendas` funcionam.
+
+## Visuais
+
+Três visuais partilham os mesmos componentes e podem ser trocados no botão "Áreas do protótipo":
+
+- **Cakto laranja** (por omissão): linguagem visual da Cakto com o laranja da marca
+- **Cakto verde**: linguagem visual da Cakto original
+- **Academia Digital**: o Design System original
+
+As fontes estão em `src/styles/skins/`; `scripts/skins.mjs` gera `skins.generated.css` em cada build.
+
+## Marcas
+
+Os logótipos de Apple Pay, Google Pay, Visa, Mastercard, M-Pesa e e-Mola pertencem aos respetivos donos.
+Antes de lançar, confirme as regras de uso de cada marca com os fornecedores de pagamento.

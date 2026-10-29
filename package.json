@@ -1,0 +1,41 @@
+{
+  "name": "vendaqui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/skins.mjs && vite",
+    "build": "node scripts/skins.mjs && tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "skins": "node scripts/skins.mjs",
+    "test:routes": "node scripts/check-routes.mjs",
+    "openapi": "node scripts/openapi.mjs",
+    "test:flows": "node scripts/check-flows.mjs"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.59.20",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.28.0"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "lightningcss": "1.28.1",
+    "msw": "2.6.4",
+    "playwright-core": "1.48.2",
+    "ts-json-schema-generator": "2.3.0",
+    "typescript": "5.6.3",
+    "vite": "5.4.11"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

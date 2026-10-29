@@ -1,0 +1,15 @@
+/* Ajustes da versão React: links que fazem o papel de botões e itens de menu. */
+a.ad-sidebar-item, a.ad-menu-item, a.ad-userchip, a.ad-tab, a.vq-logo, a.ad-item, a.queue-item, a.ad-btn { text-decoration: none; }
+a.ad-item, a.queue-item { color: inherit; }
+.checklist a { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-md); font-size: 14px; color: var(--text); text-decoration: none; }
+.checklist a:hover { background: var(--surface-hover); }
+.checklist .done span { color: var(--text-tertiary); text-decoration: line-through; }
+.ad-btn-link { border: 0; background: none; padding: 0; font: inherit; cursor: pointer; }
+.co-pay:disabled { opacity: 0.7; cursor: progress; }
+.pl-success { color: var(--success); }
+label.docslot { cursor: pointer; }
+.ad-skel { width: 100%; }
+.self-start { align-self: flex-start; }
+/* a pré-visualização do checkout no editor passa a uma coluna quando a moldura é estreita */
+.preview-frame { container-type: inline-size; }
+@container (max-width: 720px) { .preview-frame .co-grid { grid-template-columns: minmax(0, 1fr); } .preview-frame .co-summary { order: -1; } }

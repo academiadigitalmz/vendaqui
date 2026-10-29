@@ -1,3 +1,10 @@
+node_modules/
 dist/
+prototype/dist/
+.env
+.env.local
+.vercel
 .DS_Store
 *.log
+src/styles/skins.generated.css
+__pycache__/
