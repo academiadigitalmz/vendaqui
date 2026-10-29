@@ -37,7 +37,7 @@ for (const route of ROUTES) {
   const page = await ctx.newPage();
   const problems = [];
   page.on("console", (m) => { if (m.type() === "error") problems.push("consola: " + m.text().slice(0, 200)); });
-  page.on("pageerror", (e) => problems.push("erro: " + e.message.slice(0, 200)));
+  page.on("pageerror", (e) => problems.push("erro: " + (e.stack || e.message).slice(0, 600)));
   page.on("requestfailed", (r) => { if (!r.url().includes("fonts.g")) problems.push("pedido falhou: " + r.url()); });
   await page.goto(base + route, { waitUntil: "networkidle" });
   await page.waitForTimeout(600);

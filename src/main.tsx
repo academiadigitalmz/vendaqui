@@ -16,7 +16,7 @@ const queryClient = new QueryClient({
 async function start() {
   if (USE_MOCKS) {
     const { worker } = await import("./mocks/browser");
-    await worker.start({ onUnhandledRequest: "bypass", quiet: true, serviceWorker: { url: "/mockServiceWorker.js" } });
+    await worker.start({ onUnhandledRequest: "bypass", quiet: true, serviceWorker: { url: `${import.meta.env.BASE_URL}mockServiceWorker.js`, options: { scope: import.meta.env.BASE_URL } } });
   }
   createRoot(document.getElementById("root")!).render(
     <StrictMode>

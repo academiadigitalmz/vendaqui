@@ -68,6 +68,16 @@ docs/           guia do backend e especificação OpenAPI
 prototype/      o protótipo HTML original
 ```
 
+## Publicar no GitHub Pages
+
+O workflow `.github/workflows/pages.yml` faz o build e publica a demonstração a cada push para `main`,
+em `https://<conta>.github.io/<repositório>/`. Para ativar: *Settings → Pages → Source: GitHub Actions*.
+
+No plano gratuito do GitHub, o Pages só está disponível em repositórios públicos.
+
+Para testar localmente como no Pages: `BASE_PATH=/vendaqui/ npm run build`. O build cria um `404.html`
+igual ao `index.html`, para que os links diretos (ex.: `/vendaqui/produtor/vendas`) funcionem.
+
 ## Publicar no Vercel
 
 O projeto já tem `vercel.json`. No Vercel: *Add New → Project → Import* este repositório. O framework
