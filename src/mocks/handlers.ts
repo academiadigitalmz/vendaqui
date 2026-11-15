@@ -4,6 +4,7 @@
  * src/api/types.ts. Quando o backend existir, ponha VITE_USE_MOCKS=false.
  */
 import { delay, http, HttpResponse } from "msw";
+import { checkoutHandlers } from "./checkout";
 import { API_URL } from "@/api/http";
 import type * as T from "@/api/types";
 import { DEMO_USERS } from "@/lib/demo-users";
@@ -23,8 +24,6 @@ const userFor = (email: string): T.User => (email.includes("vendaqui") || email.
 const balance: T.Balance = { available: 48320, pending: 126480, reserve: 18210, nextRelease: { date: "2026-10-24T00:00:00Z", amount: 6120 } };
 const checkoutSettings: Record<string, T.CheckoutSettings> = {};
 const settingsFor = (id: string) => (checkoutSettings[id] ??= structuredClone(CHECKOUT_DEFAULT));
-const orders = new Map<string, { order: T.Order; created: number }>();
-let orderSeq = 48214;
 let kyc = [...KYC];
 let moderation: T.ModerationItem[] = [
   { id: "MOD-1", productName: "Templates de Gestão Financeira", seller: "Excel com a Ana", type: "ebook", price: 990, cover: "red", flags: [] },
@@ -67,11 +66,13 @@ function saleDetail(s: T.Sale): T.SaleDetail {
 }
 
 export const handlers = [
+  ...checkoutHandlers,
   /* ── Autenticação ── */
   http.post(url("/auth/login"), async ({ request }) => {
     const b = (await request.json()) as T.LoginInput;
     if (!b.email) return err(422, "invalid_credentials", "Indique o email.");
-    return ok<T.Session>({ token: "demo-" + Date.now(), user: userFor(b.email) }, 400);
+    const token = "demo-" + Date.now(), user = userFor(b.email);
+    return ok({ token, user, data: { accessToken: token, user } }, 400);
   }),
   http.post(url("/auth/register"), async ({ request }) => {
     const b = (await request.json()) as T.RegisterInput;
@@ -288,50 +289,6 @@ export const handlers = [
     ],
   })),
   http.patch(url("/seller/account/profile"), async ({ request }) => ok(await request.json())),
-
-  /* ── Checkout público ── */
-  http.get(url("/public/checkout/:slug"), ({ params }) => {
-    const p = PRODUCTS.find((x) => x.slug === params.slug) ?? PRODUCTS[0];
-    return ok<T.PublicCheckout>({ slug: p.slug, product: { id: p.id, name: p.name, subtitle: p.type === "course" ? "Curso online · 20 aulas · acesso por 1 ano" : "Acesso imediato", price: p.price, cover: p.cover, type: p.type }, seller: { name: "Excel com a Ana", nuit: "400 128 765" }, guaranteeDays: 7, settings: settingsFor(p.id) });
-  }),
-  http.post(url("/public/checkout/:slug/coupons"), async ({ request }) => {
-    const { code } = (await request.json()) as { code: string };
-    const c = COUPONS.find((x) => x.code === String(code).trim().toUpperCase() && x.status === "active" && x.discount.kind === "percent");
-    return ok<T.CouponCheck>(c ? { valid: true, percent: c.discount.value } : { valid: false, message: "Este cupão não existe ou já expirou." }, 300);
-  }),
-  http.post(url("/public/checkout/:slug/orders"), async ({ params, request }) => {
-    const b = (await request.json()) as T.OrderInput;
-    if (!b.buyer?.name || !/.+@.+\..+/.test(b.buyer?.email || "")) return err(422, "invalid_buyer", "Preencha o nome e um email válido para receber o acesso.");
-    const prefix = (b.walletPhone || "").replace(/\D/g, "").replace(/^258/, "").slice(0, 2);
-    if (b.method === "mpesa" && !["84", "85"].includes(prefix)) return err(422, "wallet_mismatch", "Use um número Vodacom (84 ou 85) para pagar com M-Pesa.");
-    if (b.method === "emola" && !["86", "87"].includes(prefix)) return err(422, "wallet_mismatch", "Use um número Movitel (86 ou 87) para pagar com e-Mola.");
-    const p = PRODUCTS.find((x) => x.slug === params.slug) ?? PRODUCTS[0];
-    const s = settingsFor(p.id);
-    const items = [{ name: p.name, amount: p.price }];
-    if (b.orderBump && s.orderBump.enabled) items.push({ name: "Ebook 100 Fórmulas", amount: s.orderBump.price });
-    let total = items.reduce((a, i) => a + i.amount, 0);
-    const c = b.coupon ? COUPONS.find((x) => x.code === b.coupon!.toUpperCase() && x.status === "active" && x.discount.kind === "percent") : undefined;
-    if (c) { const d = Math.round(p.price * c.discount.value / 100); items.push({ name: `Cupão ${c.code}`, amount: -d }); total -= d; }
-    const order: T.Order = {
-      id: "VQ-" + orderSeq++, status: "awaiting_confirmation", method: b.method, total, items, buyerEmail: b.buyer.email, buyerPhone: b.walletPhone || b.buyer.phone,
-      guaranteeUntil: new Date(Date.now() + 7 * 864e5).toISOString(), accessUrl: "/aluno",
-      upsell: { title: "Dashboards Profissionais no Power BI", description: "Transforme as suas folhas de Excel em relatórios interativos. 32 aulas.", price: 2390, originalPrice: 3990 },
-    };
-    orders.set(order.id, { order, created: Date.now() });
-    return ok(order, 500);
-  }),
-  http.get(url("/public/orders/:id"), ({ params }) => {
-    const o = orders.get(String(params.id));
-    if (!o) return ok<T.Order>({ id: String(params.id), status: "approved", method: "applepay", total: 2490, items: [{ name: PRODUCTS[0].name, amount: 2490 }], buyerEmail: "celso.matsinhe@gmail.com", buyerPhone: "84 312 4471", guaranteeUntil: "2026-10-29T23:59:00Z", accessUrl: "/aluno", upsell: { title: "Dashboards Profissionais no Power BI", description: "Transforme as suas folhas de Excel em relatórios interativos. 32 aulas.", price: 2390, originalPrice: 3990 } });
-    const wallet = o.order.method === "mpesa" || o.order.method === "emola";
-    if (o.order.status === "awaiting_confirmation" && Date.now() - o.created > (wallet ? 3600 : 2200)) o.order.status = "approved";
-    return ok(o.order, 150);
-  }),
-  http.post(url("/public/orders/:id/upsell"), async ({ params }) => {
-    const o = orders.get(String(params.id));
-    if (o) { o.order.items.push({ name: "Dashboards Profissionais no Power BI", amount: 2390 }); o.order.total += 2390; o.order.upsell = undefined; }
-    return ok(o?.order ?? null, 500);
-  }),
 
   /* ── Aluno ── */
   http.get(url("/student/library"), () => {

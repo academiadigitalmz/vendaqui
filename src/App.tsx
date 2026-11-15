@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, RouterProvider, Outlet } from "react-router-dom";
 import { AreaSwitcher, ConsoleLayout, PublicLayout, RequireRole, StudentLayout } from "@/layouts/Shells";
 import Landing from "@/pages/public/Landing";
+import PurchasedContent from "@/pages/public/PurchasedContent";
 import Checkout, { ThankYou } from "@/pages/public/Checkout";
 import { Login, Register } from "@/pages/public/Auth";
 import { Library, Lesson, Purchases } from "@/pages/student/Student";
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
           { path: "/", element: <Landing />, ...t("") },
           { path: "/checkout/:slug", element: <Checkout />, ...t("Checkout") },
           { path: "/checkout", element: <Navigate to="/checkout/excel-zero-avancado" replace /> },
+          { path: "/compras/:productId/conteudo", element: <PurchasedContent />, ...t("Conteúdo comprado") },
           { path: "/obrigado/:orderId", element: <ThankYou />, ...t("Compra concluída") },
           { path: "/entrar", element: <Login />, ...t("Entrar") },
           { path: "/criar-conta", element: <Register />, ...t("Criar conta") },

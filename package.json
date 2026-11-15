@@ -11,7 +11,8 @@
     "skins": "node scripts/skins.mjs",
     "test:routes": "node scripts/check-routes.mjs",
     "openapi": "node scripts/openapi.mjs",
-    "test:flows": "node scripts/check-flows.mjs"
+    "test:flows": "node scripts/check-flows.mjs",
+    "test:checkout": "node scripts/check-checkout.mjs"
   },
   "msw": {
     "workerDirectory": [

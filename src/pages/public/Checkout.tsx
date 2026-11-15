@@ -1,15 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { api } from "@/api/endpoints";
-import { HttpError } from "@/api/http";
-import type { Order, PaymentMethod, PublicCheckout } from "@/api/types";
+import type { PaymentMethod, PublicCheckout } from "@/api/types";
 import { Icon, PayLogo } from "@/lib/icons";
 import { METHODS, METHOD_ORDER, operatorOf } from "@/lib/methods";
-import { mt, dateLong } from "@/lib/format";
+import { mt } from "@/lib/format";
 import { useApp } from "@/lib/app-state";
 import { Avatar, Btn, Cover, ErrorState, Field, Input, Loading } from "@/components/ui";
-import { Modal } from "@/components/overlay";
 
 const coverIcon = (t: string) => (t === "ebook" ? "book" : t === "subscription" ? "repeat" : t === "mentoring" ? "users" : "cap") as "cap";
 
@@ -35,19 +30,12 @@ export function CheckoutView({ data, preview, onPay, paying }: { data: PublicChe
   const [email, setEmail] = useState("celso.matsinhe@gmail.com");
   const [phone, setPhone] = useState("84 312 4471");
   const [bump, setBump] = useState(false);
-  const [code, setCode] = useState("");
-  const [coupon, setCoupon] = useState<{ code: string; percent: number } | null>(null);
-  const { toast } = useApp();
   useEffect(() => { if (!methods.includes(method) && methods[0]) setMethod(methods[0]); }, [methods.join(), method]);
 
-  const check = useMutation({
-    mutationFn: () => api.checkout.checkCoupon(data.slug, code),
-    onSuccess: (r) => r.valid ? (setCoupon({ code: code.toUpperCase(), percent: r.percent ?? 0 }), toast("Cupão aplicado", `${r.percent}% de desconto no curso`)) : toast(r.message ?? "Cupão inválido", "Experimente ANA10", "danger", "xc"),
-  });
 
   const p = data.product;
   const bumpAmount = s.orderBump.enabled && bump ? s.orderBump.price : 0;
-  const disc = coupon ? Math.round(p.price * coupon.percent / 100) : 0;
+  const disc = 0;
   const total = p.price + bumpAmount - disc;
   const wallet = METHODS[method].wallet, xpay = method === "applepay" || method === "googlepay";
 
@@ -55,7 +43,7 @@ export function CheckoutView({ data, preview, onPay, paying }: { data: PublicChe
     <div className={`co acc-${s.accent}`}>
       {s.timer.enabled ? <div className="co-timer"><Icon name="clock" size={16} />Preço de lançamento termina em <Timer minutes={s.timer.minutes} /></div> : null}
       <div className="co-head"><div className="co-wrap"><span className="co-seller"><Avatar name="Ana Sitoe" />{data.seller.name}</span><span className="co-secure"><Icon name="lock" size={15} />Pagamento seguro</span></div></div>
-      <form className="co-wrap co-grid" onSubmit={(e) => { e.preventDefault(); if (!preview) onPay?.({ name, email, phone, method, bump, coupon: coupon?.code }); }}>
+      <form className="co-wrap co-grid" onSubmit={(e) => { e.preventDefault(); if (!preview) onPay?.({ name, email, phone, method, bump,  }); }}>
         <div className="stack-sm" style={{ gap: 16 }}>
           <section className="co-box"><h3><span className="n">1</span>Os seus dados</h3>
             <div className="co-fields">
@@ -108,9 +96,7 @@ export function CheckoutView({ data, preview, onPay, paying }: { data: PublicChe
             <div className="co-lines">
               <div><span>{p.name}</span><b>{mt(p.price)}</b></div>
               {bumpAmount ? <div><span>Ebook 100 Fórmulas</span><b>{mt(bumpAmount)}</b></div> : null}
-              {disc ? <div><span>Cupão {coupon!.code}</span><b style={{ color: "var(--success)" }}>−{mt(disc)}</b></div> : null}
             </div>
-            {coupon ? null : <div className="row" style={{ gap: 8, flexWrap: "nowrap" }}><Input icon="tag" placeholder="Tem um cupão?" value={code} onChange={(e) => setCode(e.target.value)} aria-label="Cupão" /><Btn onClick={() => code && !preview && check.mutate()} loading={check.isPending}>Aplicar</Btn></div>}
             <div className="co-total"><span className="muted">Total</span><b>{mt(total)}</b></div>
           </section>
           <section className="co-box"><div className="co-guarantee"><span className="co-seal">{data.guaranteeDays}<small>dias</small></span><div><b>Garantia de {data.guaranteeDays} dias</b><p className="muted" style={{ fontSize: 13, marginTop: 2 }}>Se não gostar, pede o reembolso na área do aluno e recebe o valor de volta pelo mesmo meio de pagamento.</p></div></div></section>
@@ -121,86 +107,5 @@ export function CheckoutView({ data, preview, onPay, paying }: { data: PublicChe
   );
 }
 
-function PaymentWait({ order, phone }: { order: Order; phone: string }) {
-  const card = order.method === "card", xpay = order.method === "applepay" || order.method === "googlepay";
-  const done = order.status === "approved";
-  const [step, setStep] = useState(0);
-  useEffect(() => { const t = setTimeout(() => setStep(1), 900); return () => clearTimeout(t); }, []);
-  const s = done ? 2 : step;
-  const label = METHODS[order.method].label;
-  const steps = card ? ["A validar o cartão", "Autenticação 3-D Secure", "Pagamento aprovado"] : xpay ? [`A abrir ${label}`, "Confirmação no dispositivo", "Pagamento aprovado"] : [`Pedido enviado para +258 ${phone}`, `A aguardar o PIN ${label}`, "Pagamento confirmado"];
-  return (
-    <Modal title={card ? "A processar o pagamento" : xpay ? `A pagar com ${label}` : "Confirme no seu telemóvel"} size="sm" noClose onClose={() => {}}>
-      <div className="co-wait">
-        {card || xpay ? <span className={`ad-tile ad-tile-lg ad-tile-soft ad-tone-${card ? "info" : "neutral"}`}><Icon name={METHODS[order.method].icon} size={24} /></span>
-          : <div className="co-phone"><div className="co-ussd"><b>{label}</b><br />Confirma pagamento de {mt(order.total)} a VENDAQUI*EXCEL?<i>PIN: ••••</i></div></div>}
-        <span className="co-countdown">{card ? "Não feche esta janela" : xpay ? `${mt(order.total)} para Excel com a Ana` : "O pedido expira em 60 s"}</span>
-        <div className="co-wait-steps">{steps.map((t, i) => (
-          <div key={t} className={i < s || s === 2 ? "done" : ""}>{i < s || s === 2 ? <Icon name="checkc" size={18} /> : i === s ? <span className="ad-spinner" style={{ width: 16, height: 16 }} /> : <Icon name="clock" size={18} className="faint" />}{t}</div>
-        ))}</div>
-      </div>
-    </Modal>
-  );
-}
 
-export default function Checkout() {
-  const { slug = "excel-zero-avancado" } = useParams();
-  const nav = useNavigate();
-  const { toast } = useApp();
-  const q = useQuery({ queryKey: ["checkout", slug], queryFn: () => api.checkout.get(slug) });
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [walletPhone, setWalletPhone] = useState("");
-  const create = useMutation({
-    mutationFn: (p: Parameters<NonNullable<Parameters<typeof CheckoutView>[0]["onPay"]>>[0]) => {
-      setWalletPhone(p.phone);
-      return api.checkout.createOrder(slug, { buyer: { name: p.name, email: p.email, phone: p.phone }, method: p.method, walletPhone: METHODS[p.method].wallet ? p.phone : undefined, cardToken: p.method === "card" ? "tok_demo_visa" : undefined, orderBump: p.bump, coupon: p.coupon });
-    },
-    onSuccess: (o) => setOrderId(o.id),
-    onError: (e) => toast("Não foi possível iniciar o pagamento", e instanceof HttpError ? e.message : "Tente outra vez.", "danger", "alert"),
-  });
-  const status = useQuery({ queryKey: ["order", orderId], queryFn: () => api.checkout.order(orderId!), enabled: !!orderId, refetchInterval: (qq) => (qq.state.data?.status === "awaiting_confirmation" || !qq.state.data ? 1000 : false) });
-  useEffect(() => {
-    const o = status.data;
-    if (!o) return;
-    if (o.status === "approved") { const t = setTimeout(() => nav(`/obrigado/${o.id}`), 900); return () => clearTimeout(t); }
-    if (o.status === "declined" || o.status === "expired") { setOrderId(null); toast(o.status === "declined" ? "Pagamento recusado" : "O pedido expirou", "Tente outra vez ou escolha outro meio de pagamento.", "danger", "xc"); }
-  }, [status.data, nav, toast]);
-
-  if (q.isPending) return <div className="co-wrap" style={{ paddingBlock: 32 }}><Loading /></div>;
-  if (q.isError) return <div className="co-wrap" style={{ paddingBlock: 32 }}><ErrorState error={q.error} retry={() => q.refetch()} /></div>;
-  return (
-    <>
-      <CheckoutView data={q.data} onPay={(p) => create.mutate(p)} paying={create.isPending} />
-      {orderId && status.data ? <PaymentWait order={status.data} phone={walletPhone} /> : null}
-    </>
-  );
-}
-
-export function ThankYou() {
-  const { orderId = "" } = useParams();
-  const nav = useNavigate();
-  const { toast } = useApp();
-  const q = useQuery({ queryKey: ["order", orderId], queryFn: () => api.checkout.order(orderId) });
-  const upsell = useMutation({ mutationFn: () => api.checkout.acceptUpsell(orderId), onSuccess: () => { toast("Power BI adicionado", `Novo pedido de ${mt(2390)} enviado para confirmar`); setTimeout(() => nav("/aluno"), 900); } });
-  if (q.isPending) return <div className="co-wrap" style={{ paddingBlock: 32 }}><Loading /></div>;
-  if (q.isError) return <div className="co-wrap" style={{ paddingBlock: 32 }}><ErrorState error={q.error} /></div>;
-  const o = q.data;
-  return (
-    <div className="co acc-orange">
-      <div className="co-head"><div className="co-wrap"><span className="co-seller"><Avatar name="Ana Sitoe" />Excel com a Ana</span><span className="co-secure"><Icon name="lock" size={15} />Pagamento seguro</span></div></div>
-      <div className="co-wrap"><div className="ty">
-        <div className="ty-hero"><span className="ty-check"><Icon name="check" size={36} /></span><h1>Pagamento aprovado</h1><p>Enviámos o acesso para <b>{o.buyerEmail}</b> e um SMS para +258 {o.buyerPhone}.</p></div>
-        <section className="co-box">
-          <dl className="dl"><dt>Pedido</dt><dd className="mono">{o.id}</dd><dt>Produto</dt><dd>{o.items.filter((i) => i.amount > 0).map((i) => i.name).join(" + ")}</dd><dt>Pago com</dt><dd><PayLogo method={o.method} /></dd><dt>Total</dt><dd>{mt(o.total)}</dd><dt>Garantia até</dt><dd>{dateLong(o.guaranteeUntil)}</dd></dl>
-          <Btn v="primary" s="lg" to="/aluno/aulas/m2l3" iconRight="arrow" block>Aceder ao curso</Btn>
-        </section>
-        {o.upsell ? (
-          <div className="upsell"><div className="upsell-top"><span>Espere, esta oferta só aparece agora</span><span>Adicione com 1 clique</span></div>
-            <div className="upsell-body"><Cover cover="blue" icon="cap" lg /><div className="grow"><b style={{ fontSize: 16 }}>{o.upsell.title}</b><p className="muted" style={{ fontSize: 13.5, marginTop: 2 }}>{o.upsell.description}</p></div><div className="stack-xs" style={{ alignItems: "flex-end" }}><span className="price-old">{mt(o.upsell.originalPrice)}</span><span className="price-new">{mt(o.upsell.price)}</span></div></div>
-            <div style={{ padding: "0 20px 20px" }} className="row"><Btn v="primary" className="grow" loading={upsell.isPending} onClick={() => upsell.mutate()}>Sim, adicionar ao meu pedido</Btn><Btn v="ghost" to="/aluno">Não, obrigado</Btn></div>
-          </div>
-        ) : null}
-      </div></div>
-    </div>
-  );
-}
+export { default, ThankYou } from "./Purchase";

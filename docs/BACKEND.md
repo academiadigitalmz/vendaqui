@@ -1,3 +1,7 @@
+# Estado da integração
+
+O fluxo de compra já usa o contrato actual do backend. Consulte [CHECKOUT.md](CHECKOUT.md) para rotas, payloads, recuperação, acesso e testes. As secções abaixo descrevem o contrato anterior do protótipo nas restantes áreas; as instruções antigas de checkout não se aplicam ao fluxo actual.
+
 # Guia para quem vai fazer o backend
 
 O frontend já está completo e funciona com uma API simulada no próprio browser. O seu trabalho é
@@ -47,17 +51,8 @@ para o seu servidor) e deixar `VITE_API_URL=/api`.
 ## Fluxos que merecem atenção
 
 ### Pagamento no checkout
-1. `POST /public/checkout/{slug}/orders` cria o pedido com estado `awaiting_confirmation` e inicia a cobrança:
-   - **M-Pesa** (84, 85) e **e-Mola** (86, 87): pedido C2B com push USSD para `walletPhone`. Valide o prefixo e
-     devolva `422 wallet_mismatch` se não corresponder ao método. Números Tmcel (82, 83) não são aceites.
-   - **Cartão**: a app envia `cardToken`, nunca o número do cartão. Antes de ligar o real, troque os campos
-     de cartão do checkout pelos campos alojados do adquirente (que devolvem o token). Assim o servidor nunca
-     toca no número do cartão e o âmbito PCI fica mínimo.
-   - **Apple Pay / Google Pay**: o token de pagamento do dispositivo segue pelo mesmo adquirente do cartão.
-2. A app consulta `GET /public/orders/{id}` a cada segundo até o estado ser `approved`, `declined` ou `expired`.
-   O pedido de PIN expira em 60 segundos.
-3. Com `approved`, a app abre `/obrigado/{id}`. O backend deve enviar o acesso por email e SMS e disparar os
-   webhooks e pixels do produtor.
+
+Consulte [CHECKOUT.md](CHECKOUT.md).
 
 ### Saldo e saques
 - Taxa por venda aprovada: 4,9% + 10 MT (configurável por plano em `/admin/fees`).

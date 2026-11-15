@@ -1,5 +1,5 @@
 // Percorre os fluxos principais num browser real: compra com M-Pesa até à página de obrigado,
-// erro de operadora, cupão, saque e reembolso. Precisa de `vite preview` na porta 4173.
+// confirmação de convidado, saque e reembolso. Precisa de `vite preview` na porta 4173.
 import { chromium } from "playwright-core";
 
 const base = process.argv[2] || "http://localhost:4173";
@@ -10,34 +10,18 @@ page.on("pageerror", (e) => errors.push(e.message));
 let failed = 0;
 const step = async (name, fn) => { try { await fn(); console.log("ok     " + name); } catch (e) { failed++; console.log("FALHOU " + name + "\n         " + String(e.message).split("\n")[0]); } };
 
-await step("checkout: cupão ANA10 baixa o total", async () => {
+await step("checkout: compra simulada e confirmação de convidado", async () => {
   await page.goto(base + "/checkout/excel-zero-avancado", { waitUntil: "networkidle" });
-  await page.getByPlaceholder("Tem um cupão?").fill("ANA10");
-  await page.getByRole("button", { name: "Aplicar" }).click();
-  await page.getByText("Cupão ANA10").waitFor({ timeout: 5000 });
-  await page.locator(".co-total b").filter({ hasText: "2241,00" }).or(page.locator(".co-total b").filter({ hasText: "2 241,00" })).waitFor({ timeout: 3000 });
-});
-await step("checkout: número e-Mola com M-Pesa mostra aviso e recusa", async () => {
-  await page.getByRole("radio", { name: /M-Pesa/ }).click();
-  await page.locator("#co-wallet").fill("86 312 4471");
-  await page.getByText("Este número é Movitel").waitFor({ timeout: 3000 });
-  await page.locator(".co-pay").click();
-  await page.getByText("Use um número Vodacom").waitFor({ timeout: 5000 });
-});
-await step("checkout: M-Pesa aprova e abre a página de obrigado", async () => {
-  await page.locator("#co-wallet").fill("84 312 4471");
-  await page.locator("#co-bump").check();
-  await page.locator(".co-pay").click();
-  await page.getByText("Confirme no seu telemóvel").waitFor({ timeout: 5000 });
+  await page.locator("#co-name").fill("Comprador real");
+  await page.locator("#co-email").fill("comprador@example.com");
+  await page.locator("#co-wallet").fill("844226545");
+  await page.getByRole("button", { name: /^Pagar / }).click();
   await page.waitForURL(/\/obrigado\//, { timeout: 15000 });
-  await page.getByText("Pagamento aprovado").waitFor({ timeout: 5000 });
-  await page.getByText("Ebook 100 Fórmulas", { exact: false }).first().waitFor({ timeout: 3000 });
-});
-await step("checkout: Apple Pay aprova", async () => {
-  await page.goto(base + "/checkout/excel-zero-avancado", { waitUntil: "networkidle" });
-  await page.getByRole("radio", { name: /Apple Pay/ }).click();
-  await page.getByRole("button", { name: /Pagar com Apple Pay/ }).click();
-  await page.waitForURL(/\/obrigado\//, { timeout: 15000 });
+  await page.getByRole("heading", { name: "Pagamento aprovado" }).waitFor();
+  await page.getByLabel("Código de confirmação").fill("123456");
+  await page.getByLabel("Nova palavra-passe", { exact: false }).fill("password-demo-123");
+  await page.getByRole("button", { name: "Confirmar acesso" }).click();
+  await page.getByRole("link", { name: /^Aceder a / }).waitFor();
 });
 await step("produtor: saque reduz o saldo", async () => {
   await page.goto(base + "/produtor/financeiro?sacar=1", { waitUntil: "networkidle" });

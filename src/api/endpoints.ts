@@ -4,6 +4,7 @@
  */
 import { get, patch, post, put } from "./http";
 import type * as T from "./types";
+import { checkoutApi } from "./checkout";
 
 export const api = {
   auth: {
@@ -68,18 +69,7 @@ export const api = {
     saveProfile: (b: T.Account["profile"]) => patch<T.Account["profile"]>("/seller/account/profile", b),
   },
 
-  checkout: {
-    /** GET /public/checkout/{slug} */
-    get: (slug: string) => get<T.PublicCheckout>(`/public/checkout/${slug}`),
-    /** POST /public/checkout/{slug}/coupons */
-    checkCoupon: (slug: string, code: string) => post<T.CouponCheck>(`/public/checkout/${slug}/coupons`, { code }),
-    /** POST /public/checkout/{slug}/orders */
-    createOrder: (slug: string, b: T.OrderInput) => post<T.Order>(`/public/checkout/${slug}/orders`, b),
-    /** GET /public/orders/{id} — o checkout consulta até sair de awaiting_confirmation */
-    order: (id: T.ID) => get<T.Order>(`/public/orders/${id}`),
-    /** POST /public/orders/{id}/upsell */
-    acceptUpsell: (id: T.ID) => post<T.Order>(`/public/orders/${id}/upsell`),
-  },
+  checkout: checkoutApi,
 
   student: {
     /** GET /student/library */

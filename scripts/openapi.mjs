@@ -14,6 +14,15 @@ for (const n of names) Object.assign(defs, gen.createSchema(n).definitions);
 const clean = (str) => str.replaceAll("%3C", "<").replaceAll("%3E", ">").replace(/(Paginated)<(\w+)>/g, "$1$2");
 const schemas = JSON.parse(clean(JSON.stringify(defs).replaceAll("#/definitions/", "#/components/schemas/")));
 
+// Checkout uses the current backend contract; other areas retain the prototype contract.
+const checkoutGen = createGenerator({ path: "src/api/checkout.ts", tsconfig: "tsconfig.json", expose: "export", topRef: true, skipTypeCheck: true });
+const checkoutDefs = {};
+for (const name of ["CheckoutProduct", "PaymentMethodConfig", "PurchaseInput", "Purchase", "PaymentResult", "BuyerSession"]) Object.assign(checkoutDefs, checkoutGen.createSchema(name).definitions);
+for (const [name, schema] of Object.entries(checkoutDefs)) schemas["Backend" + name] = JSON.parse(JSON.stringify(schema).replaceAll("#/definitions/", "#/components/schemas/Backend"));
+schemas.ClaimInput = { type: "object", properties: { code: { type: "string" }, password: { type: "string" } }, required: ["code", "password"] };
+schemas.ClaimResult = { type: "object", properties: { order: { $ref: "#/components/schemas/BackendCheckoutOrder" }, accessToken: { type: "string" }, user: { $ref: "#/components/schemas/BackendBuyerIdentity" } }, required: ["order"] };
+schemas.RetryPaymentInput = { type: "object", properties: { method: { enum: ["mpesa", "emola"] }, msisdn: { type: "string" } }, required: ["method", "msisdn"] };
+
 const ref = (t) => {
   if (!t) return undefined;
   if (t.endsWith("[]")) return { type: "array", items: ref(t.slice(0, -2)) };
@@ -66,11 +75,6 @@ const R = [
   ["get", "/seller/account", "Produtor", "Perfil, verificação, notificações, segurança e equipa", null, "Account"],
   ["patch", "/seller/account/profile", "Produtor", "Atualizar o perfil público", "Inline", "Inline"],
 
-  ["get", "/public/checkout/{slug}", "Checkout público", "Dados do checkout de um produto", null, "PublicCheckout", [], true],
-  ["post", "/public/checkout/{slug}/coupons", "Checkout público", "Validar cupão", "CodeInput", "CouponCheck", [], true],
-  ["post", "/public/checkout/{slug}/orders", "Checkout público", "Criar pedido e iniciar o pagamento. M-Pesa/e-Mola enviam push USSD; cartão usa cardToken do adquirente", "OrderInput", "Order", [], true],
-  ["get", "/public/orders/{id}", "Checkout público", "Estado do pedido (o frontend consulta de segundo a segundo até sair de awaiting_confirmation)", null, "Order", [], true],
-  ["post", "/public/orders/{id}/upsell", "Checkout público", "Aceitar o upsell com 1 clique", null, "Order", [], true],
 
   ["get", "/student/library", "Aluno", "Produtos comprados e recomendação", null, "Library"],
   ["get", "/student/courses/{productId}", "Aluno", "Curso com o progresso do aluno", null, "Course"],
@@ -98,6 +102,15 @@ const R = [
   ["get", "/admin/audit-logs", "Backoffice", "Registo de auditoria", null, "Paginated<AuditLog>"],
 ];
 
+R.push(
+  ["get", "/public/products/{slug}", "Checkout público", "Consultar produto e ofertas", null, "BackendCheckoutProduct", [], true],
+  ["get", "/payments/methods", "Checkout público", "Métodos disponíveis", null, "BackendPaymentMethodConfig[]", [], true],
+  ["post", "/checkout/orders", "Checkout público", "Criar encomenda e iniciar pagamento (autenticação opcional)", "BackendPurchaseInput", "BackendPurchase", [], true],
+  ["get", "/checkout/orders/{id}", "Checkout público", "Consultar compra (Bearer ou Checkout-Token)", null, "BackendPurchase", [], true],
+  ["post", "/checkout/orders/{id}/payment-attempts", "Checkout público", "Nova tentativa após recusa confirmada", "RetryPaymentInput", "BackendPaymentResult", [], true],
+  ["post", "/checkout/orders/{id}/claim", "Checkout público", "Associar compra com código de email", "ClaimInput", "ClaimResult", [], true],
+);
+
 const paths = {};
 for (const [method, path, tag, summary, body, res, query = [], pub = false] of R) {
   const params = [...path.matchAll(/\{(\w+)\}/g)].map(([, n]) => ({ name: n, in: "path", required: true, schema: { type: "string" } }));
@@ -106,6 +119,15 @@ for (const [method, path, tag, summary, body, res, query = [], pub = false] of R
   if (body) op.requestBody = { required: true, content: { "application/json": { schema: ref(body) } } };
   op.responses[res ? "200" : method === "post" && /refund|evidence/.test(path) ? "202" : "204"] = res ? { description: "OK", content: { "application/json": { schema: ref(res) } } } : { description: "Sem conteúdo" };
   op.responses["4XX"] = { description: "Erro de validação, autorização ou estado", content: { "application/json": { schema: ref("ApiError") } } };
+  if (tag === "Checkout público") {
+    if (path.startsWith("/checkout/orders")) {
+      op.parameters ??= [];
+      if (method === "post" && !path.endsWith("/claim")) op.parameters.push({ name: "Idempotency-Key", in: "header", required: true, schema: { type: "string", format: "uuid" } });
+      if (path.includes("{id}")) op.parameters.push({ name: "Checkout-Token", in: "header", required: false, description: "Obrigatório para compras como convidado; preservar no mesmo separador.", schema: { type: "string" } });
+    }
+    const success = method === "post" && !path.endsWith("/claim") ? "201" : "200";
+    op.responses = { [success]: { description: "OK", content: { "application/json": { schema: { type: "object", properties: { data: ref(res) }, required: ["data"] } } } }, "4XX": { description: "Erro", content: { "application/json": { schema: { type: "object", properties: { error: ref("ApiError") }, required: ["error"] } } } } };
+  }
   (paths[path] ??= {})[method] = op;
 }
 

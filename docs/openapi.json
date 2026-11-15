@@ -1155,236 +1155,6 @@
         }
       }
     },
-    "/public/checkout/{slug}": {
-      "get": {
-        "tags": [
-          "Checkout público"
-        ],
-        "summary": "Dados do checkout de um produto",
-        "operationId": "getPublicCheckoutSlug",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicCheckout"
-                }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Erro de validação, autorização ou estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/public/checkout/{slug}/coupons": {
-      "post": {
-        "tags": [
-          "Checkout público"
-        ],
-        "summary": "Validar cupão",
-        "operationId": "postPublicCheckoutSlugCoupons",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CouponCheck"
-                }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Erro de validação, autorização ou estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CodeInput"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/public/checkout/{slug}/orders": {
-      "post": {
-        "tags": [
-          "Checkout público"
-        ],
-        "summary": "Criar pedido e iniciar o pagamento. M-Pesa/e-Mola enviam push USSD; cartão usa cardToken do adquirente",
-        "operationId": "postPublicCheckoutSlugOrders",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Order"
-                }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Erro de validação, autorização ou estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OrderInput"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/public/orders/{id}": {
-      "get": {
-        "tags": [
-          "Checkout público"
-        ],
-        "summary": "Estado do pedido (o frontend consulta de segundo a segundo até sair de awaiting_confirmation)",
-        "operationId": "getPublicOrdersId",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Order"
-                }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Erro de validação, autorização ou estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/public/orders/{id}/upsell": {
-      "post": {
-        "tags": [
-          "Checkout público"
-        ],
-        "summary": "Aceitar o upsell com 1 clique",
-        "operationId": "postPublicOrdersIdUpsell",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Order"
-                }
-              }
-            }
-          },
-          "4XX": {
-            "description": "Erro de validação, autorização ou estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/student/library": {
       "get": {
         "tags": [
@@ -2286,6 +2056,414 @@
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/products/{slug}": {
+      "get": {
+        "tags": [
+          "Checkout público"
+        ],
+        "summary": "Consultar produto e ofertas",
+        "operationId": "getPublicProductsSlug",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BackendCheckoutProduct"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payments/methods": {
+      "get": {
+        "tags": [
+          "Checkout público"
+        ],
+        "summary": "Métodos disponíveis",
+        "operationId": "getPaymentsMethods",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BackendPaymentMethodConfig"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checkout/orders": {
+      "post": {
+        "tags": [
+          "Checkout público"
+        ],
+        "summary": "Criar encomenda e iniciar pagamento (autenticação opcional)",
+        "operationId": "postCheckoutOrders",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BackendPurchase"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackendPurchaseInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checkout/orders/{id}": {
+      "get": {
+        "tags": [
+          "Checkout público"
+        ],
+        "summary": "Consultar compra (Bearer ou Checkout-Token)",
+        "operationId": "getCheckoutOrdersId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Checkout-Token",
+            "in": "header",
+            "required": false,
+            "description": "Obrigatório para compras como convidado; preservar no mesmo separador.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BackendPurchase"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checkout/orders/{id}/payment-attempts": {
+      "post": {
+        "tags": [
+          "Checkout público"
+        ],
+        "summary": "Nova tentativa após recusa confirmada",
+        "operationId": "postCheckoutOrdersIdPaymentAttempts",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Checkout-Token",
+            "in": "header",
+            "required": false,
+            "description": "Obrigatório para compras como convidado; preservar no mesmo separador.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BackendPaymentResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryPaymentInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checkout/orders/{id}/claim": {
+      "post": {
+        "tags": [
+          "Checkout público"
+        ],
+        "summary": "Associar compra com código de email",
+        "operationId": "postCheckoutOrdersIdClaim",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Checkout-Token",
+            "in": "header",
+            "required": false,
+            "description": "Obrigatório para compras como convidado; preservar no mesmo separador.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ClaimResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimInput"
               }
             }
           }
@@ -6104,6 +6282,437 @@
           "ip"
         ],
         "additionalProperties": false
+      },
+      "BackendCheckoutProduct": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "guaranteeDays": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "slug",
+              "description",
+              "type",
+              "guaranteeDays"
+            ],
+            "additionalProperties": false
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "priceAmount": {
+                  "type": "number"
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "isActive": {
+                  "type": "boolean"
+                },
+                "isDefault": {
+                  "type": "boolean"
+                },
+                "billingPeriod": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "priceAmount",
+                "currency",
+                "isActive",
+                "isDefault"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "sellerDisplayName": {
+            "type": "string"
+          },
+          "coverUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "product",
+          "offers",
+          "sellerDisplayName"
+        ],
+        "additionalProperties": false
+      },
+      "BackendPaymentMethodConfig": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string"
+          },
+          "isEnabled": {
+            "type": "boolean"
+          },
+          "ready": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "method",
+          "isEnabled",
+          "ready"
+        ],
+        "additionalProperties": false
+      },
+      "BackendPurchaseInput": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "offerId": {
+            "type": "string"
+          },
+          "method": {
+            "$ref": "#/components/schemas/BackendWalletMethod"
+          },
+          "msisdn": {
+            "type": "string"
+          },
+          "buyer": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "msisdn": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "email",
+              "msisdn"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "productId",
+          "offerId",
+          "method",
+          "msisdn"
+        ],
+        "additionalProperties": false
+      },
+      "BackendWalletMethod": {
+        "type": "string",
+        "enum": [
+          "mpesa",
+          "emola"
+        ]
+      },
+      "BackendPurchase": {
+        "type": "object",
+        "properties": {
+          "payment": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "confirmationStatus": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "confirmationStatus"
+            ],
+            "additionalProperties": false
+          },
+          "attempt": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string"
+              },
+              "failureCode": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "method"
+            ],
+            "additionalProperties": false
+          },
+          "message": {
+            "type": "string"
+          },
+          "order": {
+            "$ref": "#/components/schemas/BackendCheckoutOrder"
+          },
+          "checkoutToken": {
+            "type": "string"
+          },
+          "claimStatus": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "attempt",
+          "order",
+          "payment"
+        ],
+        "additionalProperties": false
+      },
+      "BackendCheckoutOrder": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "productId": {
+                  "type": "string"
+                },
+                "productName": {
+                  "type": "string"
+                },
+                "offerName": {
+                  "type": "string"
+                },
+                "totalAmount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "productId",
+                "productName",
+                "offerName",
+                "totalAmount"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "status",
+          "totalAmount",
+          "currency",
+          "expiresAt"
+        ],
+        "additionalProperties": false
+      },
+      "BackendPaymentResult": {
+        "type": "object",
+        "properties": {
+          "payment": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "confirmationStatus": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "confirmationStatus"
+            ],
+            "additionalProperties": false
+          },
+          "attempt": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string"
+              },
+              "failureCode": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "method"
+            ],
+            "additionalProperties": false
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "payment",
+          "attempt"
+        ],
+        "additionalProperties": false
+      },
+      "BackendBuyerSession": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/BackendBuyerIdentity"
+          }
+        },
+        "required": [
+          "accessToken",
+          "user"
+        ],
+        "additionalProperties": false
+      },
+      "BackendBuyerIdentity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "msisdn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email"
+        ],
+        "additionalProperties": false
+      },
+      "ClaimInput": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "password"
+        ]
+      },
+      "ClaimResult": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "$ref": "#/components/schemas/BackendCheckoutOrder"
+          },
+          "accessToken": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/BackendBuyerIdentity"
+          }
+        },
+        "required": [
+          "order"
+        ]
+      },
+      "RetryPaymentInput": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "enum": [
+              "mpesa",
+              "emola"
+            ]
+          },
+          "msisdn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "method",
+          "msisdn"
+        ]
       },
       "PaginatedBase": {
         "type": "object",
