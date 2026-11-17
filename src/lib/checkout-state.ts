@@ -13,9 +13,14 @@ export function saveDraft(slug: string, draft: CheckoutDraft) {
 export function readDraft(key: string): CheckoutDraft | null {
   try { return JSON.parse(sessionStorage.getItem(prefix + key) || "null"); } catch { return null; }
 }
+export function clearDraft(key: string, draft?: CheckoutDraft | null) {
+  sessionStorage.removeItem(prefix + key);
+  if (draft?.orderId) sessionStorage.removeItem(prefix + "order." + draft.orderId);
+}
 export function normalizePhone(value: string) {
   const digits = value.replace(/\D/g, "");
-  return digits.length === 9 ? "258" + digits : digits;
+  if (!digits) return "";
+  return digits.length === 9 ? `+258${digits}` : `+${digits}`;
 }
 export function paymentState(p: Purchase): "paid" | "retry" | "closed" | "waiting" {
   if (p.order.status === "paid" && p.payment.status === "succeeded") return "paid";

@@ -1,100 +1,67 @@
-# VendAqui
+# VendAqui Frontend
 
-Plataforma para vender cursos, ebooks, mentorias e assinaturas em Moçambique, com pagamentos por
-Apple Pay, Google Pay, M-Pesa, e-Mola e cartão.
+Frontend React/Vite da plataforma VendAqui. A aplicação consome directamente o contrato do `vendaqui-backend`; não possui API simulada nem rotas funcionais fictícias.
 
-Esta pasta contém o **frontend completo**: landing page, checkout, área do produtor, área do aluno e
-backoffice. Enquanto o backend não existe, a app responde com dados de exemplo no próprio browser
-(MSW), por isso pode ser publicada e testada já.
-
-- **Para quem faz o backend:** leia [docs/BACKEND.md](docs/BACKEND.md). O contrato está em
-  [docs/openapi.json](docs/openapi.json).
-- **Protótipo original** (HTML único, referência visual): pasta [prototype/](prototype/).
-
-## Começar
+## Desenvolvimento
 
 ```bash
 npm install
-npm run dev          # http://localhost:5173
+cp .env.example .env.local
+npm run dev
 ```
 
-Requer Node 20 ou mais recente.
+Requer Node.js 20.19 ou superior (ou 22.12+ nas séries mais recentes).
 
-| Comando | O que faz |
+| Comando | Finalidade |
 |---|---|
-| `npm run dev` | Servidor de desenvolvimento |
-| `npm run build` | Gera os visuais, verifica os tipos e cria `dist/` |
-| `npm run typecheck` | Só a verificação de tipos |
-| `npm run openapi` | Regenera `docs/openapi.json` a partir de `src/api/types.ts` |
-| `npm run test:routes` | Abre as 38 rotas num browser (precisa de `vite preview` a correr e do Chrome instalado) |
-| `npm run test:flows` | Percorre compra, saque, reembolso, cupão, KYC e saques em lote num browser |
+| `npm run dev` | Servidor local em `http://localhost:5173` |
+| `npm run typecheck` | Validação TypeScript sem gerar ficheiros |
+| `npm run build` | Typecheck e build de produção |
+| `npm run preview` | Servir localmente o resultado do build |
 
-## Variáveis de ambiente
+## Configuração
 
-Copie `.env.example` para `.env.local`.
+`VITE_API_URL` contém a origem/base da API sem `/v1`. O cliente acrescenta esse prefixo.
 
-| Variável | Por omissão | Para quê |
-|---|---|---|
-| `VITE_API_URL` | `/api` | Endereço da API (a app acrescenta `/v1`) |
-| `VITE_USE_MOCKS` | `true` | `false` quando o backend estiver pronto |
-| `VITE_DEFAULT_SKIN` | `cakto` | Visual inicial: `cakto` (verde), `cakto-laranja` ou `academia` |
-| `VITE_SHOW_SWITCHER` | `true` | Mostra o botão "Áreas do protótipo" para quem está a testar |
-
-## Áreas e rotas
-
-| Área | Rotas |
-|---|---|
-| Público | `/`, `/checkout/:slug`, `/obrigado/:pedido`, `/entrar`, `/criar-conta` |
-| Produtor | `/produtor`, `/produtor/produtos`, `/produtor/vendas`, `/produtor/financeiro`, … |
-| Aluno | `/aluno`, `/aluno/aulas/:aula`, `/aluno/compras` |
-| Backoffice | `/admin`, `/admin/kyc`, `/admin/saques`, `/admin/transacoes`, … |
-
-Em modo simulado, abrir uma área cria uma sessão de demonstração com o papel certo. Com o backend real,
-as áreas exigem login e redirecionam para `/entrar`.
-
-## Estrutura
-
-```
-src/
-  api/          contrato (types.ts), cliente HTTP e lista de chamadas
-  mocks/        API simulada (MSW) e dados de exemplo
-  components/   componentes do Design System em React
-  layouts/      molduras do produtor, backoffice e aluno
-  pages/        ecrãs por área (public, seller, student, admin)
-  lib/          formatação, ícones, logótipos, estado da interface
-  styles/       tokens e componentes do Design System Academia Digital e visuais Cakto
-scripts/        geração dos visuais, da especificação OpenAPI e teste das rotas
-docs/           guia do backend e especificação OpenAPI
-prototype/      o protótipo HTML original
+```env
+VITE_API_URL=http://localhost:8080
+VITE_DEFAULT_SKIN=cakto
+VITE_SHOW_SWITCHER=false
 ```
 
-## Publicar no GitHub Pages
+Em produção, configurar a origem HTTPS real, por exemplo `https://api.vendaqui.academiamz.digital`. O backend deve incluir a origem exacta do frontend em `CORS_ALLOWED_ORIGINS`.
 
-O workflow `.github/workflows/pages.yml` faz o build e publica a demonstração a cada push para `main`,
-em `https://<conta>.github.io/<repositório>/`. Para ativar: *Settings → Pages → Source: GitHub Actions*.
+## Autenticação
 
-No plano gratuito do GitHub, o Pages só está disponível em repositórios públicos.
+- O refresh token existe apenas no cookie HttpOnly emitido pelo backend.
+- O access token é mantido apenas em memória e nunca é escrito em `localStorage` ou `sessionStorage`.
+- Ao recarregar a aplicação, o frontend chama o endpoint de refresh com `credentials: include` e volta a consultar a identidade.
+- Pedidos que recebem `401` tentam uma única renovação e repetem a operação uma vez.
+- Utilizadores públicos e membros do backoffice usam cookies, audiências e endpoints separados.
+- O papel `seller` usado pela interface é derivado da existência do perfil comercial; não é inventado como papel da conta pública.
+- Um produtor pode continuar a comprar e consultar a biblioteca como qualquer outro utilizador público.
 
-Para testar localmente como no Pages: `BASE_PATH=/vendaqui/ npm run build`. O build cria um `404.html`
-igual ao `index.html`, para que os links diretos (ex.: `/vendaqui/produtor/vendas`) funcionem.
+## Áreas suportadas
 
-## Publicar no Vercel
+- Público: catálogo do checkout, compra autenticada ou convidada e associação posterior da compra.
+- Comprador: biblioteca, histórico de encomendas e acesso autorizado ao conteúdo.
+- Produtor: perfil comercial, KYC, ebooks, ficheiros, submissão para análise, vendas, saldo, destinos e saques.
+- Backoffice: produtores, KYC, moderação de produtos, encomendas e decisões individuais de saques.
 
-O projeto já tem `vercel.json`. No Vercel: *Add New → Project → Import* este repositório. O framework
-(Vite), o comando de build e a pasta `dist` são detetados. As rotas do lado do cliente são reescritas para
-`index.html`, por isso links diretos como `/produtor/vendas` funcionam.
+O frontend apresenta actualmente apenas ebooks no formulário simplificado. O backend já suporta a estrutura de cursos, mas o editor de módulos e aulas deve ser implementado antes de a opção ser exposta ao utilizador.
 
-## Visuais
+## Uploads
 
-Três visuais partilham os mesmos componentes e podem ser trocados no botão "Áreas do protótipo":
+Documentos KYC e ficheiros de produtos não passam pelo backend:
 
-- **Cakto verde** (por omissão): linguagem visual da Cakto original
-- **Cakto laranja**: linguagem visual da Cakto com o laranja da marca
-- **Academia Digital**: o Design System original
+1. O frontend pede uma autorização à API.
+2. Envia o ficheiro directamente para S3/MinIO usando os campos assinados.
+3. Confirma o upload e associa a referência ao recurso.
 
-As fontes estão em `src/styles/skins/`; `scripts/skins.mjs` gera `skins.generated.css` em cada build.
+As capas usam uma URL `PUT` assinada; documentos e conteúdos usam formulário `POST` assinado.
 
-## Marcas
+## Segurança financeira
 
-Os logótipos de Apple Pay, Google Pay, Visa, Mastercard, M-Pesa e e-Mola pertencem aos respetivos donos.
-Antes de lançar, confirme as regras de uso de cada marca com os fornecedores de pagamento.
+Checkout e saques usam `Idempotency-Key`. Operações incertas são preservadas em `sessionStorage` apenas com a referência e o payload operacional, nunca com tokens ou palavras-passe. Uma resposta ambígua não cria automaticamente outra cobrança ou outro saque.
+
+Valores monetários atravessam a API em meticais como números decimais. A conversão para unidades menores é uma responsabilidade interna do backend.

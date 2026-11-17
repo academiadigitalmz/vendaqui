@@ -1,5 +1,5 @@
 /** Componentes do Design System em React. As classes ad-* vêm de src/styles/components.css. */
-import { useId, useState, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes, type ButtonHTMLAttributes } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes, type ButtonHTMLAttributes, type ChangeEvent } from "react";
 import { Link } from "react-router-dom";
 import { Icon, PayLogo, type IconName } from "@/lib/icons";
 import { initials, int, pct, maskPhone } from "@/lib/format";
@@ -62,14 +62,51 @@ export function Input({ s = "md", icon, prefix, suffix, wrapClass = "", ...rest 
 }
 export const SearchInput = (p: InputProps) => <Input icon="search" wrapClass="ad-search" {...p} />;
 
-export function Select({ options, s = "md", icon, ...rest }: { options: (string | [string, string])[]; s?: Size; icon?: IconName } & Omit<SelectHTMLAttributes<HTMLSelectElement>, "size">) {
-  return (
-    <div className={`ad-input ad-input-${s} ad-select`}>
-      {icon ? <span className="ad-input-icon"><Icon name={icon} size={16} /></span> : null}
-      <select {...rest}>{options.map((o) => { const [v, l] = Array.isArray(o) ? o : [o, o]; return <option key={v} value={v}>{l}</option>; })}</select>
-      <span className="ad-select-chevron"><Icon name="down" size={16} /></span>
-    </div>
-  );
+type SelectProps = {
+  options: (string | [string, string])[];
+  s?: Size;
+  icon?: IconName;
+  onValueChange?: (value: string) => void;
+} & Omit<SelectHTMLAttributes<HTMLSelectElement>, "size" | "onChange"> & { onChange?: (event: ChangeEvent<HTMLSelectElement>) => void };
+
+export function Select({ options, s = "md", icon, value, defaultValue, onChange, onValueChange, disabled, required, name, id, className = "", ...rest }: SelectProps) {
+  const generatedId = useId();
+  const controlId = id ?? generatedId;
+  const root = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [innerValue, setInnerValue] = useState(() => String(defaultValue ?? ""));
+  const selectedValue = value === undefined ? innerValue : String(value);
+  const normalized = options.map(option => Array.isArray(option) ? option : [option, option] as [string, string]);
+  const selected = normalized.find(([optionValue]) => optionValue === selectedValue);
+
+  useEffect(() => {
+    const close = (event: PointerEvent) => { if (!root.current?.contains(event.target as Node)) setOpen(false); };
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", escape); };
+  }, []);
+
+  const choose = (nextValue: string) => {
+    if (value === undefined) setInnerValue(nextValue);
+    onValueChange?.(nextValue);
+    onChange?.({ target: { value: nextValue }, currentTarget: { value: nextValue } } as unknown as ChangeEvent<HTMLSelectElement>);
+    setOpen(false);
+  };
+  const move = (direction: 1 | -1) => {
+    const currentIndex = Math.max(0, normalized.findIndex(([optionValue]) => optionValue === selectedValue));
+    const nextIndex = Math.max(0, Math.min(normalized.length - 1, currentIndex + direction));
+    choose(normalized[nextIndex][0]);
+  };
+
+  return <div ref={root} className={`ad-input ad-input-${s} ad-select ${open ? "is-open" : ""} ${disabled ? "is-disabled" : ""} ${className}`}>
+    {icon ? <span className="ad-input-icon"><Icon name={icon} size={16} /></span> : null}
+    <button id={controlId} type="button" className="ad-select-trigger" disabled={disabled} aria-haspopup="listbox" aria-expanded={open} aria-required={required} aria-label={rest["aria-label"]} onClick={() => setOpen(current => !current)} onKeyDown={event => { if (event.key === "ArrowDown") { event.preventDefault(); move(1); } else if (event.key === "ArrowUp") { event.preventDefault(); move(-1); } }}>
+      <span className={!selectedValue ? "faint" : ""}>{selected?.[1] ?? "Seleccione"}</span><Icon name="down" size={16} />
+    </button>
+    {name && <input type="hidden" name={name} value={selectedValue} />}
+    {open && <div className="ad-select-menu" role="listbox" aria-labelledby={controlId}>{normalized.map(([optionValue, label]) => <button type="button" role="option" aria-selected={optionValue === selectedValue} className={`ad-select-option ${optionValue === selectedValue ? "is-selected" : ""}`} key={optionValue} onClick={() => choose(optionValue)}><span>{label}</span>{optionValue === selectedValue && <Icon name="check" size={15} />}</button>)}</div>}
+  </div>;
 }
 
 export const Textarea = ({ rows = 3, ...rest }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
@@ -202,9 +239,9 @@ export const CellUser = ({ name, sub, avatar = true }: { name: string; sub?: Rea
 /** Etiqueta de estado com cor semântica. */
 const STATUS: Record<string, [string, Tone]> = {
   approved: ["Aprovada", "success"], pending: ["Pendente", "warning"], declined: ["Recusada", "danger"], refunded: ["Reembolsada", "neutral"], chargeback: ["Chargeback", "danger"], expired: ["Expirada", "neutral"],
-  active: ["Ativo", "success"], in_review: ["Em análise", "warning"], draft: ["Rascunho", "neutral"], suspended: ["Suspenso", "danger"],
+  active: ["Ativo", "success"], in_review: ["Em análise", "warning"], pending_review: ["A aguardar análise", "warning"], changes_requested: ["Alterações pedidas", "warning"], draft: ["Rascunho", "neutral"], archived: ["Arquivado", "neutral"], suspended: ["Suspenso", "danger"],
   past_due: ["Em atraso", "warning"], canceled: ["Cancelada", "neutral"],
-  paid: ["Pago", "success"], processing: ["Em processamento", "info"], failed: ["Falhou", "danger"], rejected: ["Rejeitado", "danger"],
+  paid: ["Pago", "success"], processing: ["Em processamento", "info"], pending_payment: ["A aguardar pagamento", "warning"], pending_approval: ["A aguardar aprovação", "warning"], failed: ["Falhou", "danger"], rejected: ["Rejeitado", "danger"],
   verified: ["Verificado", "success"], blocked: ["Bloqueado", "danger"],
   open: ["Aberta", "warning"], won: ["Ganha", "success"], lost: ["Perdida", "danger"], resolved: ["Resolvida", "success"],
   expired_coupon: ["Expirado", "neutral"],

@@ -18,18 +18,9 @@ export function Mark({ size = 18 }: { size?: number }) {
   );
 }
 
-function Brand({ k }: { k: "applepay" | "googlepay" | "visa" | "mastercard" }) {
-  const b = BRAND[k];
-  return <svg className={`pm-svg pm-svg-${k}`} viewBox={b.viewBox} fill="currentColor" role="img" aria-label={b.name}><path d={b.d} /></svg>;
-}
-
 /** Logótipo cinzento de um meio de pagamento (ou "bank" para transferência). */
 export function PayLogo({ method }: { method: PaymentMethod | "bank" }) {
   switch (method) {
-    case "applepay": case "googlepay":
-      return <span className="pm-logo" title={BRAND[method].name}><Brand k={method} /></span>;
-    case "card":
-      return <span className="pm-logo" title="Visa e Mastercard"><Brand k="visa" /><Brand k="mastercard" /></span>;
     case "mpesa":
       return <span className="pm-logo" title="M-Pesa"><svg className="pm-svg pm-svg-mpesa" viewBox={BRAND.mpesa.viewBox} fill="currentColor" role="img" aria-label="M-Pesa" dangerouslySetInnerHTML={{ __html: BRAND.mpesa.svg }} /></span>;
     case "emola":

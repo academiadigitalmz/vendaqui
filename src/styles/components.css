@@ -119,8 +119,16 @@ button { font: inherit; color: inherit; }
 .ad-textarea { padding: var(--space-3); align-items: stretch; }
 .ad-textarea textarea { resize: vertical; line-height: 20px; }
 .ad-select { position: relative; }
-.ad-select select { appearance: none; -webkit-appearance: none; padding-right: var(--space-6); cursor: pointer; }
-.ad-select-chevron { position: absolute; right: var(--space-3); pointer-events: none; color: var(--text-tertiary); }
+.ad-select-trigger { width: 100%; height: 100%; display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.ad-select-trigger:disabled { cursor: not-allowed; }
+.ad-select-trigger > svg { flex: none; color: var(--text-tertiary); transition: transform var(--ad-dur-fast); }
+.ad-select.is-open { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); z-index: calc(var(--z-dropdown) + 1); }
+.ad-select.is-open .ad-select-trigger > svg { transform: rotate(180deg); }
+.ad-select.is-disabled { opacity: .55; cursor: not-allowed; }
+.ad-select-menu { position: absolute; z-index: var(--z-dropdown); top: calc(100% + 6px); left: 0; right: 0; max-height: 260px; overflow-y: auto; padding: 6px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-lg); animation: ad-rise var(--ad-dur-fast) var(--ad-ease); }
+.ad-select-option { width: 100%; min-height: 38px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: 8px 10px; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--text); font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; }
+.ad-select-option:hover, .ad-select-option:focus-visible { background: var(--surface-hover); outline: none; }
+.ad-select-option.is-selected { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
 .ad-search { background: var(--surface-subtle); box-shadow: none; }
 .ad-search input::-webkit-search-cancel-button { display: none; }
 .ad-kbd { font-family: var(--font-sans); font-size: 11px; line-height: 16px; padding: 0 var(--space-1); border: 1px solid var(--border); border-radius: var(--radius-xs); color: var(--text-tertiary); background: var(--surface); }

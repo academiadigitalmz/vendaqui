@@ -21,18 +21,12 @@ export interface PaymentResult {
   attempt: { id: string; status: string; method: string; failureCode?: string };
   message?: string;
 }
-export interface Purchase extends PaymentResult { order: CheckoutOrder; checkoutToken?: string; claimStatus?: string }
+export interface Purchase extends PaymentResult { order: CheckoutOrder; checkoutToken?: string; claimStatus?: string; claimMode?: "existing_account" | "unverified_account" | "create_account" }
 export interface BuyerIdentity { id: string; name: string; email: string; msisdn?: string }
 export interface BuyerSession { accessToken: string; user: BuyerIdentity }
-// The claim endpoint currently serializes its domain user with PascalCase keys.
-// Whitelist public identity fields; never persist the raw domain object.
-interface ClaimIdentity { ID: string; Name: string; Email: string; MSISDN?: string }
-const publicIdentity = (user: BuyerIdentity | ClaimIdentity): BuyerIdentity => "ID" in user
-  ? { id: user.ID, name: user.Name, email: user.Email, msisdn: user.MSISDN }
-  : { id: user.id, name: user.name, email: user.email, msisdn: user.msisdn };
 
 const request = <T>(method: string, path: string, body?: unknown, headers?: Record<string, string>) =>
-  http<T>(method, path, { body, headers, envelope: true, credentials: "include" });
+  http<T>(method, path, { body, headers });
 const checkoutHeaders = (token?: string, key?: string) => ({ ...(token ? { "Checkout-Token": token } : {}), ...(key ? { "Idempotency-Key": key } : {}) });
 
 export const checkoutApi = {
@@ -43,8 +37,7 @@ export const checkoutApi = {
   retry: (id: string, input: Pick<PurchaseInput, "method" | "msisdn">, key: string, token?: string) =>
     request<PaymentResult>("POST", `/checkout/orders/${encodeURIComponent(id)}/payment-attempts`, input, checkoutHeaders(token, key)),
   claim: async (id: string, code: string, password: string, token?: string) => {
-    const result = await request<{ order: CheckoutOrder; accessToken?: string; user?: BuyerIdentity | ClaimIdentity }>("POST", `/checkout/orders/${encodeURIComponent(id)}/claim`, { code, password }, checkoutHeaders(token));
-    return { order: result.order, accessToken: result.accessToken, user: result.user ? publicIdentity(result.user) : undefined };
+    return request<{ order: CheckoutOrder; accessToken?: string; user?: BuyerIdentity }>("POST", `/checkout/orders/${encodeURIComponent(id)}/claim`, { code, password }, checkoutHeaders(token));
   },
   login: (email: string, password: string) => request<BuyerSession>("POST", "/auth/login", { email, password }),
 };

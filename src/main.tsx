@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AppProvider, USE_MOCKS } from "@/lib/app-state";
+import { AppProvider } from "@/lib/app-state";
 import App from "./App";
 import "@/styles/tokens.css";
 import "@/styles/components.css";
@@ -13,11 +13,7 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
 });
 
-async function start() {
-  if (USE_MOCKS) {
-    const { worker } = await import("./mocks/browser");
-    await worker.start({ onUnhandledRequest: "bypass", quiet: true, serviceWorker: { url: `${import.meta.env.BASE_URL}mockServiceWorker.js`, options: { scope: import.meta.env.BASE_URL } } });
-  }
+function start() {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>

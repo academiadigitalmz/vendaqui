@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="description" content="VendAqui — plataforma para vender cursos, ebooks e mentorias com Apple Pay, Google Pay, M-Pesa, e-Mola e cartão." />
+    <meta name="description" content="VendAqui — venda ebooks e cursos em Moçambique com pagamentos por M-Pesa e e-Mola." />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#3fc958" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -14,9 +14,7 @@
     <script>
       // aplica visual e tema antes do primeiro desenho para não piscar
       try {
-        // VITE_DEFAULT_SKIN é substituído pelo Vite no build; sem variável fica "cakto" (verde)
-        var def = "%VITE_DEFAULT_SKIN%";
-        if (!/^(academia|cakto|cakto-laranja)$/.test(def)) def = "cakto";
+        var def = "cakto";
         var sk = JSON.parse(localStorage.getItem("vq.skin") || "null");
         var th = JSON.parse(localStorage.getItem("vq.theme") || "null");
         document.documentElement.setAttribute("data-skin", sk || def);
