@@ -13,7 +13,8 @@ const spaFallback = () => ({
   apply: "build" as const,
   closeBundle() {
     const out = resolve(fileURLToPath(new URL(".", import.meta.url)), "dist");
-    if (existsSync(resolve(out, "index.html"))) copyFileSync(resolve(out, "index.html"), resolve(out, "404.html"));
+    if (existsSync(resolve(out, "index.html")))
+      copyFileSync(resolve(out, "index.html"), resolve(out, "404.html"));
   },
 });
 
@@ -27,7 +28,9 @@ export default defineConfig(({ mode }) => {
     resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
     css: {
       transformer: "lightningcss",
-      lightningcss: { targets: { safari: (15 << 16) | (4 << 8), chrome: 100 << 16, firefox: 100 << 16 } },
+      lightningcss: {
+        targets: { safari: (15 << 16) | (4 << 8), chrome: 100 << 16, firefox: 100 << 16 },
+      },
     },
     build: { cssMinify: "lightningcss", target: "es2020", sourcemap: true },
     server: {
@@ -36,7 +39,17 @@ export default defineConfig(({ mode }) => {
         "/api": {
           target: apiProxyTarget,
           changeOrigin: true,
-          rewrite: path => path.replace(/^\/api/, ""),
+          rewrite: (path) => path.replace(/^\/api/, ""),
+          configure(proxy) {
+            proxy.on("proxyRes", (proxyResponse) => {
+              const cookies = proxyResponse.headers["set-cookie"];
+              if (!cookies) return;
+
+              proxyResponse.headers["set-cookie"] = cookies.map((cookie) =>
+                cookie.replace(/Path=\/v1\//i, "Path=/api/v1/"),
+              );
+            });
+          },
         },
       },
     },

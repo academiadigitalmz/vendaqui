@@ -1,62 +1,217 @@
 /** Componentes do Design System em React. As classes ad-* vêm de src/styles/components.css. */
-import { useEffect, useId, useRef, useState, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes, type ButtonHTMLAttributes, type ChangeEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type InputHTMLAttributes,
+  type SelectHTMLAttributes,
+  type ButtonHTMLAttributes,
+  type ChangeEvent,
+} from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { Icon, PayLogo, type IconName } from "@/lib/icons";
 import { initials, int, pct, maskPhone } from "@/lib/format";
 import { METHODS } from "@/lib/methods";
 import type { PaymentMethod, PayoutDestinationKind } from "@/api/types";
 
-export type Tone = "neutral" | "primary" | "success" | "info" | "warning" | "danger" | "blue" | "purple" | "green" | "orange" | "teal" | "red";
+export type Tone =
+  | "neutral"
+  | "primary"
+  | "success"
+  | "info"
+  | "warning"
+  | "danger"
+  | "blue"
+  | "purple"
+  | "green"
+  | "orange"
+  | "teal"
+  | "red";
 type BtnVariant = "primary" | "secondary" | "ghost" | "soft" | "danger" | "inverse" | "link";
 type Size = "sm" | "md" | "lg";
 
 interface BtnProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type"> {
-  v?: BtnVariant; s?: Size; icon?: IconName; iconRight?: IconName; to?: string; block?: boolean; loading?: boolean; type?: "button" | "submit";
+  v?: BtnVariant;
+  s?: Size;
+  icon?: IconName;
+  iconRight?: IconName;
+  to?: string;
+  block?: boolean;
+  loading?: boolean;
+  type?: "button" | "submit";
 }
-export function Btn({ v = "secondary", s = "md", icon, iconRight, to, block, loading, className = "", children, type = "button", ...rest }: BtnProps) {
+export function Btn({
+  v = "secondary",
+  s = "md",
+  icon,
+  iconRight,
+  to,
+  block,
+  loading,
+  className = "",
+  children,
+  type = "button",
+  ...rest
+}: BtnProps) {
   const cls = `ad-btn ad-btn-${v} ad-btn-${s} ${block ? "ad-btn-block" : ""} ${className}`;
-  const inner = (<>{loading ? <span className="ad-spinner" style={{ width: 16, height: 16 }} /> : icon ? <Icon name={icon} size={s === "sm" ? 16 : 18} /> : null}{children != null && children !== "" ? <span>{children}</span> : null}{iconRight ? <Icon name={iconRight} size={16} /> : null}</>);
-  if (to) return <Link className={cls} to={to}>{inner}</Link>;
-  return <button type={type} className={cls} disabled={loading || rest.disabled} {...rest}>{inner}</button>;
+  const inner = (
+    <>
+      {loading ? (
+        <span className="ad-spinner" style={{ width: 16, height: 16 }} />
+      ) : icon ? (
+        <Icon name={icon} size={s === "sm" ? 16 : 18} />
+      ) : null}
+      {children != null && children !== "" ? <span>{children}</span> : null}
+      {iconRight ? <Icon name={iconRight} size={16} /> : null}
+    </>
+  );
+  if (to)
+    return (
+      <Link className={cls} to={to}>
+        {inner}
+      </Link>
+    );
+  return (
+    <button type={type} className={cls} disabled={loading || rest.disabled} {...rest}>
+      {inner}
+    </button>
+  );
 }
 
-export function IconBtn({ icon, label, s = "md", v = "ghost", badge, className = "", ...rest }: { icon: IconName; label: string; s?: Size; v?: BtnVariant; badge?: number | string } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type">) {
+export function IconBtn({
+  icon,
+  label,
+  s = "md",
+  v = "ghost",
+  badge,
+  className = "",
+  ...rest
+}: { icon: IconName; label: string; s?: Size; v?: BtnVariant; badge?: number | string } & Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "type"
+>) {
   return (
-    <button type="button" className={`ad-iconbtn ad-iconbtn-${s} ad-btn-${v} ${className}`} aria-label={label} title={label} {...rest}>
+    <button
+      type="button"
+      className={`ad-iconbtn ad-iconbtn-${s} ad-btn-${v} ${className}`}
+      aria-label={label}
+      title={label}
+      {...rest}
+    >
       <Icon name={icon} size={s === "sm" ? 16 : 18} />
       {badge ? <span className="ad-count ad-iconbtn-badge">{badge}</span> : null}
     </button>
   );
 }
 
-export const Badge = ({ children, tone = "neutral", v = "soft", s = "sm", dot }: { children: ReactNode; tone?: Tone; v?: "soft" | "solid" | "outline"; s?: "sm" | "md"; dot?: boolean }) => (
-  <span className={`ad-badge ad-badge-${v} ad-badge-${s} ad-tone-${tone}`}>{dot ? <span className="ad-badge-dot" /> : null}{children}</span>
+export const Badge = ({
+  children,
+  tone = "neutral",
+  v = "soft",
+  s = "sm",
+  dot,
+}: {
+  children: ReactNode;
+  tone?: Tone;
+  v?: "soft" | "solid" | "outline";
+  s?: "sm" | "md";
+  dot?: boolean;
+}) => (
+  <span className={`ad-badge ad-badge-${v} ad-badge-${s} ad-tone-${tone}`}>
+    {dot ? <span className="ad-badge-dot" /> : null}
+    {children}
+  </span>
 );
 
-export const Tile = ({ icon, tone = "primary", s = "md", v = "soft" }: { icon: IconName; tone?: Tone; s?: "sm" | "md" | "lg"; v?: "soft" | "solid" }) => (
-  <span className={`ad-tile ad-tile-${v} ad-tile-${s} ad-tone-${tone}`}><Icon name={icon} size={s === "sm" ? 16 : s === "lg" ? 24 : 20} /></span>
+export const Tile = ({
+  icon,
+  tone = "primary",
+  s = "md",
+  v = "soft",
+}: {
+  icon: IconName;
+  tone?: Tone;
+  s?: "sm" | "md" | "lg";
+  v?: "soft" | "solid";
+}) => (
+  <span className={`ad-tile ad-tile-${v} ad-tile-${s} ad-tone-${tone}`}>
+    <Icon name={icon} size={s === "sm" ? 16 : s === "lg" ? 24 : 20} />
+  </span>
 );
 
-export const Avatar = ({ name, s = "sm" }: { name: string; s?: "xs" | "sm" | "md" | "lg" | "xl" }) => <span className={`ad-avatar ad-avatar-${s}`}>{initials(name)}</span>;
+export const Avatar = ({
+  name,
+  s = "sm",
+}: {
+  name: string;
+  s?: "xs" | "sm" | "md" | "lg" | "xl";
+}) => <span className={`ad-avatar ad-avatar-${s}`}>{initials(name)}</span>;
 
-export function Field({ label, children, help, req, aside, className = "", htmlFor }: { label?: ReactNode; children: ReactNode; help?: ReactNode; req?: boolean; aside?: ReactNode; className?: string; htmlFor?: string }) {
+export function Field({
+  label,
+  children,
+  help,
+  req,
+  aside,
+  className = "",
+  htmlFor,
+}: {
+  label?: ReactNode;
+  children: ReactNode;
+  help?: ReactNode;
+  req?: boolean;
+  aside?: ReactNode;
+  className?: string;
+  htmlFor?: string;
+}) {
   return (
     <div className={`ad-field ${className}`}>
-      {label ? <div className="ad-field-top"><label className="ad-label" htmlFor={htmlFor}>{label}{req ? <> <span className="ad-req">*</span></> : null}</label>{aside}</div> : null}
+      {label ? (
+        <div className="ad-field-top">
+          <label className="ad-label" htmlFor={htmlFor}>
+            {label}
+            {req ? (
+              <>
+                {" "}
+                <span className="ad-req">*</span>
+              </>
+            ) : null}
+          </label>
+          {aside}
+        </div>
+      ) : null}
       {children}
       {help ? <span className="ad-helper">{help}</span> : null}
     </div>
   );
 }
 
-interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size" | "prefix"> { s?: Size; icon?: IconName; prefix?: string; suffix?: string; wrapClass?: string }
+interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size" | "prefix"> {
+  s?: Size;
+  icon?: IconName;
+  prefix?: string;
+  suffix?: string;
+  wrapClass?: string;
+}
 export function Input({ s = "md", icon, prefix, suffix, wrapClass = "", ...rest }: InputProps) {
   return (
     <div className={`ad-input ad-input-${s} ${wrapClass}`}>
-      {icon ? <span className="ad-input-icon"><Icon name={icon} size={16} /></span> : null}
+      {icon ? (
+        <span className="ad-input-icon">
+          <Icon name={icon} size={16} />
+        </span>
+      ) : null}
       {prefix ? <span className="co-prefix">{prefix}</span> : null}
       <input {...rest} />
-      {suffix ? <span className="faint" style={{ fontSize: 13 }}>{suffix}</span> : null}
+      {suffix ? (
+        <span className="faint" style={{ fontSize: 13 }}>
+          {suffix}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -67,111 +222,573 @@ type SelectProps = {
   s?: Size;
   icon?: IconName;
   onValueChange?: (value: string) => void;
-} & Omit<SelectHTMLAttributes<HTMLSelectElement>, "size" | "onChange"> & { onChange?: (event: ChangeEvent<HTMLSelectElement>) => void };
+} & Omit<SelectHTMLAttributes<HTMLSelectElement>, "size" | "onChange"> & {
+    onChange?: (event: ChangeEvent<HTMLSelectElement>) => void;
+  };
 
-export function Select({ options, s = "md", icon, value, defaultValue, onChange, onValueChange, disabled, required, name, id, className = "", ...rest }: SelectProps) {
+export function Select({
+  options,
+  s = "md",
+  icon,
+  value,
+  defaultValue,
+  onChange,
+  onValueChange,
+  disabled,
+  required,
+  name,
+  id,
+  className = "",
+  ...rest
+}: SelectProps) {
   const generatedId = useId();
   const controlId = id ?? generatedId;
+  const menuId = `${controlId}-menu`;
   const root = useRef<HTMLDivElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{
+    left: number;
+    width: number;
+    maxHeight: number;
+    top?: number;
+    bottom?: number;
+  } | null>(null);
   const [innerValue, setInnerValue] = useState(() => String(defaultValue ?? ""));
   const selectedValue = value === undefined ? innerValue : String(value);
-  const normalized = options.map(option => Array.isArray(option) ? option : [option, option] as [string, string]);
+  const normalized = options.map((option) =>
+    Array.isArray(option) ? option : ([option, option] as [string, string]),
+  );
   const selected = normalized.find(([optionValue]) => optionValue === selectedValue);
 
   useEffect(() => {
-    const close = (event: PointerEvent) => { if (!root.current?.contains(event.target as Node)) setOpen(false); };
-    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    const close = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!root.current?.contains(target) && !menu.current?.contains(target)) setOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
     document.addEventListener("pointerdown", close);
     document.addEventListener("keydown", escape);
-    return () => { document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", escape); };
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", escape);
+    };
   }, []);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuPosition(null);
+      return;
+    }
+
+    const positionMenu = () => {
+      const rect = root.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const viewportGap = 12;
+      const menuGap = 6;
+      const width = Math.min(rect.width, window.innerWidth - viewportGap * 2);
+      const left = Math.min(
+        Math.max(viewportGap, rect.left),
+        window.innerWidth - viewportGap - width,
+      );
+      const roomBelow = window.innerHeight - rect.bottom - viewportGap - menuGap;
+      const roomAbove = rect.top - viewportGap - menuGap;
+      const placeAbove = roomBelow < 140 && roomAbove > roomBelow;
+      const availableHeight = placeAbove ? roomAbove : roomBelow;
+
+      setMenuPosition({
+        left,
+        width,
+        maxHeight: Math.min(260, Math.max(80, availableHeight)),
+        ...(placeAbove
+          ? { bottom: window.innerHeight - rect.top + menuGap }
+          : { top: rect.bottom + menuGap }),
+      });
+    };
+
+    positionMenu();
+    window.addEventListener("resize", positionMenu);
+    window.addEventListener("scroll", positionMenu, true);
+    return () => {
+      window.removeEventListener("resize", positionMenu);
+      window.removeEventListener("scroll", positionMenu, true);
+    };
+  }, [open]);
 
   const choose = (nextValue: string) => {
     if (value === undefined) setInnerValue(nextValue);
     onValueChange?.(nextValue);
-    onChange?.({ target: { value: nextValue }, currentTarget: { value: nextValue } } as unknown as ChangeEvent<HTMLSelectElement>);
+    onChange?.({
+      target: { value: nextValue },
+      currentTarget: { value: nextValue },
+    } as unknown as ChangeEvent<HTMLSelectElement>);
     setOpen(false);
   };
   const move = (direction: 1 | -1) => {
-    const currentIndex = Math.max(0, normalized.findIndex(([optionValue]) => optionValue === selectedValue));
+    const currentIndex = Math.max(
+      0,
+      normalized.findIndex(([optionValue]) => optionValue === selectedValue),
+    );
     const nextIndex = Math.max(0, Math.min(normalized.length - 1, currentIndex + direction));
     choose(normalized[nextIndex][0]);
   };
 
-  return <div ref={root} className={`ad-input ad-input-${s} ad-select ${open ? "is-open" : ""} ${disabled ? "is-disabled" : ""} ${className}`}>
-    {icon ? <span className="ad-input-icon"><Icon name={icon} size={16} /></span> : null}
-    <button id={controlId} type="button" className="ad-select-trigger" disabled={disabled} aria-haspopup="listbox" aria-expanded={open} aria-required={required} aria-label={rest["aria-label"]} onClick={() => setOpen(current => !current)} onKeyDown={event => { if (event.key === "ArrowDown") { event.preventDefault(); move(1); } else if (event.key === "ArrowUp") { event.preventDefault(); move(-1); } }}>
-      <span className={!selectedValue ? "faint" : ""}>{selected?.[1] ?? "Seleccione"}</span><Icon name="down" size={16} />
-    </button>
-    {name && <input type="hidden" name={name} value={selectedValue} />}
-    {open && <div className="ad-select-menu" role="listbox" aria-labelledby={controlId}>{normalized.map(([optionValue, label]) => <button type="button" role="option" aria-selected={optionValue === selectedValue} className={`ad-select-option ${optionValue === selectedValue ? "is-selected" : ""}`} key={optionValue} onClick={() => choose(optionValue)}><span>{label}</span>{optionValue === selectedValue && <Icon name="check" size={15} />}</button>)}</div>}
-  </div>;
+  return (
+    <div
+      ref={root}
+      className={`ad-input ad-input-${s} ad-select ${open ? "is-open" : ""} ${disabled ? "is-disabled" : ""} ${className}`}
+    >
+      {icon ? (
+        <span className="ad-input-icon">
+          <Icon name={icon} size={16} />
+        </span>
+      ) : null}
+      <button
+        id={controlId}
+        type="button"
+        className="ad-select-trigger"
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-controls={menuId}
+        aria-expanded={open}
+        aria-required={required}
+        aria-label={rest["aria-label"]}
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            move(1);
+          } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            move(-1);
+          }
+        }}
+      >
+        <span className={!selectedValue ? "faint" : ""}>{selected?.[1] ?? "Seleccione"}</span>
+        <Icon name="down" size={16} />
+      </button>
+      {name && <input type="hidden" name={name} value={selectedValue} />}
+      {open &&
+        menuPosition &&
+        createPortal(
+          <div
+            ref={menu}
+            id={menuId}
+            className="ad-select-menu ad-select-menu-portal"
+            style={menuPosition}
+            role="listbox"
+            aria-labelledby={controlId}
+          >
+            {normalized.map(([optionValue, label]) => (
+              <button
+                type="button"
+                role="option"
+                aria-selected={optionValue === selectedValue}
+                className={`ad-select-option ${optionValue === selectedValue ? "is-selected" : ""}`}
+                key={optionValue}
+                onClick={() => choose(optionValue)}
+              >
+                <span>{label}</span>
+                {optionValue === selectedValue && <Icon name="check" size={15} />}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
+    </div>
+  );
 }
 
-export const Textarea = ({ rows = 3, ...rest }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
-  <div className="ad-input ad-textarea"><textarea rows={rows} {...rest} /></div>
+export const Textarea = ({
+  rows = 3,
+  ...rest
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
+  <div className="ad-input ad-textarea">
+    <textarea rows={rows} {...rest} />
+  </div>
 );
 
-export function Switch({ checked, onChange, label, defaultChecked }: { checked?: boolean; onChange?: (v: boolean) => void; label: string; defaultChecked?: boolean }) {
+type FileUploadProps = {
+  value: File | null;
+  onChange: (file: File | null) => void;
+  accept: string;
+  hint: string;
+  maxSize: number;
+  disabled?: boolean;
+  progress?: number | null;
+  required?: boolean;
+};
+
+const readableFileSize = (bytes: number) =>
+  bytes < 1024 * 1024
+    ? `${Math.max(1, Math.ceil(bytes / 1024))} KB`
+    : `${(bytes / (1024 * 1024)).toLocaleString("pt-MZ", { maximumFractionDigits: 1 })} MB`;
+
+const fileMatches = (file: File, accept: string) =>
+  accept.split(",").some((raw) => {
+    const rule = raw.trim().toLowerCase();
+    const type = file.type.toLowerCase();
+    if (rule.startsWith(".")) return file.name.toLowerCase().endsWith(rule);
+    if (rule.endsWith("/*")) return type.startsWith(rule.slice(0, -1));
+    return type === rule;
+  });
+
+export function FileUpload({
+  value,
+  onChange,
+  accept,
+  hint,
+  maxSize,
+  disabled,
+  progress,
+  required,
+}: FileUploadProps) {
+  const inputId = useId();
+  const input = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState("");
+  const [preview, setPreview] = useState("");
+  const uploading = progress != null && progress < 100;
+
+  useEffect(() => {
+    if (!value?.type.startsWith("image/")) {
+      setPreview("");
+      return;
+    }
+    const url = URL.createObjectURL(value);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [value]);
+
+  const selectFile = (file?: File) => {
+    setDragging(false);
+    if (!file) return;
+    if (!fileMatches(file, accept)) {
+      setError("Este formato de ficheiro não é suportado.");
+      return;
+    }
+    if (!file.size || file.size > maxSize) {
+      setError(`O ficheiro deve ter no máximo ${readableFileSize(maxSize)}.`);
+      return;
+    }
+    setError("");
+    onChange(file);
+  };
+
+  const remove = () => {
+    if (disabled || uploading) return;
+    if (input.current) input.current.value = "";
+    setError("");
+    onChange(null);
+  };
+
+  const paste = (event: React.ClipboardEvent<HTMLElement>) => {
+    if (disabled || uploading) return;
+    const file = Array.from(event.clipboardData.files)[0];
+    if (file) {
+      event.preventDefault();
+      selectFile(file);
+    }
+  };
+
+  const hiddenInput = (
+    <input
+      ref={input}
+      id={inputId}
+      className="ad-upload-input"
+      type="file"
+      accept={accept}
+      disabled={disabled || uploading}
+      aria-required={required}
+      onChange={(event) => selectFile(event.target.files?.[0])}
+    />
+  );
+
+  return (
+    <div className="ad-upload" onPaste={paste}>
+      {hiddenInput}
+      {!value ? (
+        <label
+          className={`ad-upload-zone ${dragging ? "is-dragging" : ""} ${error ? "is-error" : ""} ${disabled ? "is-disabled" : ""}`}
+          htmlFor={inputId}
+          tabIndex={disabled ? -1 : 0}
+          aria-label={`Escolher ficheiro. ${hint}`}
+          onClick={() => {
+            if (input.current) input.current.value = "";
+          }}
+          onKeyDown={(event) => {
+            if (!disabled && (event.key === "Enter" || event.key === " ")) {
+              event.preventDefault();
+              if (input.current) {
+                input.current.value = "";
+                input.current.click();
+              }
+            }
+          }}
+          onDragEnter={(event) => {
+            event.preventDefault();
+            if (!disabled) setDragging(true);
+          }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            if (!disabled) setDragging(true);
+          }}
+          onDragLeave={(event) => {
+            event.preventDefault();
+            if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragging(false);
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            if (!disabled) selectFile(event.dataTransfer.files[0]);
+          }}
+        >
+          <span className="ad-upload-mark">
+            <Icon name="upload" size={18} />
+          </span>
+          <span className="ad-upload-copy">
+            <strong>Arraste o ficheiro para aqui</strong>
+            <span>ou clique para escolher · também pode colar</span>
+          </span>
+          <span className="ad-upload-hint">{hint}</span>
+        </label>
+      ) : (
+        <div className={`ad-upload-file ${uploading ? "is-uploading" : ""}`}>
+          {preview ? (
+            <img className="ad-upload-preview" src={preview} alt="Pré-visualização do ficheiro" />
+          ) : (
+            <span className="ad-upload-type">
+              {value.name.split(".").pop()?.slice(0, 5).toUpperCase() || "FILE"}
+            </span>
+          )}
+          <span className="ad-upload-meta">
+            <strong title={value.name}>{value.name}</strong>
+            <span>
+              {readableFileSize(value.size)}
+              {uploading
+                ? ` · A enviar ${Math.round(progress ?? 0)}%`
+                : progress === 100
+                  ? " · Enviado"
+                  : " · Pronto para enviar"}
+            </span>
+          </span>
+          <span className="ad-upload-actions">
+            <label
+              className="ad-upload-action"
+              htmlFor={inputId}
+              aria-disabled={disabled || uploading}
+              onClick={() => {
+                if (input.current) input.current.value = "";
+              }}
+            >
+              Substituir
+            </label>
+            <button
+              type="button"
+              className="ad-upload-action is-danger"
+              onClick={remove}
+              disabled={disabled || uploading}
+            >
+              Remover
+            </button>
+          </span>
+          {progress != null ? (
+            <span
+              className="ad-upload-progress"
+              aria-label={`Progresso do upload: ${Math.round(progress)}%`}
+            >
+              <i style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
+            </span>
+          ) : null}
+        </div>
+      )}
+      {error ? (
+        <span className="ad-upload-error" role="alert">
+          {error}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+export function Switch({
+  checked,
+  onChange,
+  label,
+  defaultChecked,
+}: {
+  checked?: boolean;
+  onChange?: (v: boolean) => void;
+  label: string;
+  defaultChecked?: boolean;
+}) {
   const [inner, setInner] = useState(!!defaultChecked);
   const on = checked ?? inner;
   return (
-    <button type="button" className="ad-switch-track" role="switch" aria-checked={on} aria-label={label} onClick={() => { if (checked === undefined) setInner(!on); onChange?.(!on); }}>
+    <button
+      type="button"
+      className="ad-switch-track"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      onClick={() => {
+        if (checked === undefined) setInner(!on);
+        onChange?.(!on);
+      }}
+    >
       <span className="ad-switch-thumb" />
     </button>
   );
 }
 
-export function Checkbox({ label, defaultChecked, checked, onChange }: { label: ReactNode; defaultChecked?: boolean; checked?: boolean; onChange?: (v: boolean) => void }) {
+export function Checkbox({
+  label,
+  defaultChecked,
+  checked,
+  onChange,
+}: {
+  label: ReactNode;
+  defaultChecked?: boolean;
+  checked?: boolean;
+  onChange?: (v: boolean) => void;
+}) {
   return (
     <label className="ad-check">
-      <input type="checkbox" defaultChecked={defaultChecked} checked={checked} onChange={(e) => onChange?.(e.target.checked)} />
-      <span className="ad-check-box"><Icon name="check" size={12} /></span>
+      <input
+        type="checkbox"
+        defaultChecked={defaultChecked}
+        checked={checked}
+        onChange={(e) => onChange?.(e.target.checked)}
+      />
+      <span className="ad-check-box">
+        <Icon name="check" size={12} />
+      </span>
       <span className="ad-check-label">{label}</span>
     </label>
   );
 }
 
-export function Tabs<K extends string>({ items, value, onChange, kind = "underline" }: { items: [K, ReactNode, (number | string)?][]; value: K; onChange: (k: K) => void; kind?: "underline" | "pill" | "segmented" }) {
+export function Tabs<K extends string>({
+  items,
+  value,
+  onChange,
+  kind = "underline",
+}: {
+  items: [K, ReactNode, (number | string)?][];
+  value: K;
+  onChange: (k: K) => void;
+  kind?: "underline" | "pill" | "segmented";
+}) {
   return (
     <div className={`ad-tabs ad-tabs-${kind}`} role="tablist">
       {items.map(([k, l, c]) => (
-        <button key={k} type="button" className={`ad-tab ${k === value ? "is-active" : ""}`} role="tab" aria-selected={k === value} onClick={() => onChange(k)}>
-          {l}{c != null ? <span className="ad-tab-count">{c}</span> : null}
+        <button
+          key={k}
+          type="button"
+          className={`ad-tab ${k === value ? "is-active" : ""}`}
+          role="tab"
+          aria-selected={k === value}
+          onClick={() => onChange(k)}
+        >
+          {l}
+          {c != null ? <span className="ad-tab-count">{c}</span> : null}
         </button>
       ))}
     </div>
   );
 }
 
-export function Card({ title, icon, tone = "primary", aside, children, foot, flush, className = "" }: { title?: ReactNode; icon?: IconName; tone?: Tone; aside?: ReactNode; children: ReactNode; foot?: ReactNode; flush?: boolean; className?: string }) {
+export function Card({
+  title,
+  icon,
+  tone = "primary",
+  aside,
+  children,
+  foot,
+  flush,
+  className = "",
+}: {
+  title?: ReactNode;
+  icon?: IconName;
+  tone?: Tone;
+  aside?: ReactNode;
+  children: ReactNode;
+  foot?: ReactNode;
+  flush?: boolean;
+  className?: string;
+}) {
   return (
     <section className={`ad-card ${className}`}>
-      {title ? <header className="ad-card-head"><div className="ad-card-title">{icon ? <Tile icon={icon} tone={tone} s="sm" /> : null}<h3>{title}</h3></div>{aside}</header> : null}
+      {title ? (
+        <header className="ad-card-head">
+          <div className="ad-card-title">
+            {icon ? <Tile icon={icon} tone={tone} s="sm" /> : null}
+            <h3>{title}</h3>
+          </div>
+          {aside}
+        </header>
+      ) : null}
       <div className={`ad-card-body ${flush ? "" : "is-padded"}`}>{children}</div>
       {foot ? <footer className="ad-card-foot">{foot}</footer> : null}
     </section>
   );
 }
 
-export function PageHead({ title, desc, actions, over }: { title: ReactNode; desc?: ReactNode; actions?: ReactNode; over?: ReactNode }) {
+export function PageHead({
+  title,
+  desc,
+  actions,
+  over,
+}: {
+  title: ReactNode;
+  desc?: ReactNode;
+  actions?: ReactNode;
+  over?: ReactNode;
+}) {
   return (
     <div className="ad-pagehead">
-      <div>{over ? <div className="ad-overline">{over}</div> : null}<h1 className="ad-pagehead-title">{title}</h1>{desc ? <p className="ad-pagehead-desc">{desc}</p> : null}</div>
+      <div>
+        {over ? <div className="ad-overline">{over}</div> : null}
+        <h1 className="ad-pagehead-title">{title}</h1>
+        {desc ? <p className="ad-pagehead-desc">{desc}</p> : null}
+      </div>
       {actions ? <div className="ad-pagehead-actions">{actions}</div> : null}
     </div>
   );
 }
 
-export function Kpi({ label, value, icon = "bars", tone = "primary", delta, hint, spark, sparkColor, aside }: { label: ReactNode; value: ReactNode; icon?: IconName; tone?: Tone; delta?: number; hint?: ReactNode; spark?: number[]; sparkColor?: string; aside?: ReactNode }) {
+export function Kpi({
+  label,
+  value,
+  delta,
+  hint,
+  spark,
+  sparkColor,
+  aside,
+}: {
+  label: ReactNode;
+  value: ReactNode;
+  delta?: number;
+  hint?: ReactNode;
+  spark?: number[];
+  sparkColor?: string;
+  aside?: ReactNode;
+}) {
   return (
     <div className="kpi">
-      <div className="kpi-top">
-        <Tile icon={icon} tone={tone} s="sm" />
-        {delta != null ? <span className={`delta ${delta >= 0 ? "up" : "down"}`}><Icon name={delta >= 0 ? "trendup" : "trenddown"} size={13} />{pct(Math.abs(delta))}</span> : aside}
+      <div className="kpi-head">
+        <span className="kpi-label">{label}</span>
+        {delta != null ? (
+          <span className={`delta ${delta >= 0 ? "up" : "down"}`}>
+            {delta >= 0 ? "+" : "−"}
+            {pct(Math.abs(delta))}
+          </span>
+        ) : (
+          (aside ?? null)
+        )}
       </div>
-      <span className="kpi-label">{label}</span>
       <span className="kpi-value">{value}</span>
       {hint ? <span className="kpi-hint">{hint}</span> : null}
       {spark ? <Spark data={spark} color={sparkColor} /> : null}
@@ -180,48 +797,137 @@ export function Kpi({ label, value, icon = "bars", tone = "primary", delta, hint
 }
 
 export const Meter = ({ value, color = "var(--primary)" }: { value: number; color?: string }) => (
-  <span className="meter" style={{ ["--mc" as string]: color }}><i style={{ width: `${Math.max(2, Math.min(100, value))}%` }} /></span>
+  <span className="meter" style={{ ["--mc" as string]: color }}>
+    <i style={{ width: `${Math.max(2, Math.min(100, value))}%` }} />
+  </span>
 );
 
-export function Alert({ title, text, tone = "info", icon = "info", action }: { title: ReactNode; text?: ReactNode; tone?: Tone; icon?: IconName; action?: ReactNode }) {
+export function Alert({
+  title,
+  text,
+  tone = "info",
+  icon = "info",
+  action,
+}: {
+  title: ReactNode;
+  text?: ReactNode;
+  tone?: Tone;
+  icon?: IconName;
+  action?: ReactNode;
+}) {
   return (
     <div className={`ad-alert ad-tone-${tone}`} role="status">
-      <span className="ad-alert-icon"><Icon name={icon} size={20} /></span>
-      <div className="ad-alert-body"><span className="ad-alert-title">{title}</span>{text ? <span className="ad-alert-text">{text}</span> : null}{action ? <div className="ad-alert-action">{action}</div> : null}</div>
+      <span className="ad-alert-icon">
+        <Icon name={icon} size={20} />
+      </span>
+      <div className="ad-alert-body">
+        <span className="ad-alert-title">{title}</span>
+        {text ? <span className="ad-alert-text">{text}</span> : null}
+        {action ? <div className="ad-alert-action">{action}</div> : null}
+      </div>
     </div>
   );
 }
 
-export const Empty = ({ icon, title, desc, action }: { icon: IconName; title: ReactNode; desc?: ReactNode; action?: ReactNode }) => (
-  <div className="ad-empty"><span className="ad-empty-icon"><Icon name={icon} size={22} /></span><span className="ad-empty-title">{title}</span>{desc ? <span className="ad-empty-desc">{desc}</span> : null}{action ? <div className="ad-empty-action">{action}</div> : null}</div>
+export const Empty = ({
+  icon,
+  title,
+  desc,
+  action,
+}: {
+  icon: IconName;
+  title: ReactNode;
+  desc?: ReactNode;
+  action?: ReactNode;
+}) => (
+  <div className="ad-empty">
+    <span className="ad-empty-icon">
+      <Icon name={icon} size={22} />
+    </span>
+    <span className="ad-empty-title">{title}</span>
+    {desc ? <span className="ad-empty-desc">{desc}</span> : null}
+    {action ? <div className="ad-empty-action">{action}</div> : null}
+  </div>
 );
 
 export function Pager({ total, per = 10 }: { total: number; per?: number }) {
   const last = Math.max(4, Math.ceil(total / per));
   return (
     <div className="tbl-foot">
-      <span>A mostrar 1–{Math.min(per, total)} de {int(total)}</span>
+      <span>
+        A mostrar 1–{Math.min(per, total)} de {int(total)}
+      </span>
       <nav className="ad-pagination" aria-label="Paginação">
-        <button className="ad-page" aria-label="Anterior"><Icon name="left" size={16} /></button>
-        <button className="ad-page is-active">1</button><button className="ad-page">2</button><button className="ad-page">3</button>
-        <span className="ad-page-gap">…</span><button className="ad-page">{last}</button>
-        <button className="ad-page" aria-label="Seguinte"><Icon name="right" size={16} /></button>
+        <button className="ad-page" aria-label="Anterior">
+          <Icon name="left" size={16} />
+        </button>
+        <button className="ad-page is-active">1</button>
+        <button className="ad-page">2</button>
+        <button className="ad-page">3</button>
+        <span className="ad-page-gap">…</span>
+        <button className="ad-page">{last}</button>
+        <button className="ad-page" aria-label="Seguinte">
+          <Icon name="right" size={16} />
+        </button>
       </nav>
     </div>
   );
 }
 
-export interface Col<R> { label: ReactNode; render: (r: R, i: number) => ReactNode; num?: boolean; key?: string }
-export function Table<R>({ cols, rows, onRow, rowKey, dense, className = "", total, per }: { cols: Col<R>[]; rows: R[]; onRow?: (r: R) => void; rowKey: (r: R, i: number) => string; dense?: boolean; className?: string; total?: number; per?: number }) {
+export interface Col<R> {
+  label: ReactNode;
+  render: (r: R, i: number) => ReactNode;
+  num?: boolean;
+  key?: string;
+}
+export function Table<R>({
+  cols,
+  rows,
+  onRow,
+  rowKey,
+  dense,
+  className = "",
+  total,
+  per,
+}: {
+  cols: Col<R>[];
+  rows: R[];
+  onRow?: (r: R) => void;
+  rowKey: (r: R, i: number) => string;
+  dense?: boolean;
+  className?: string;
+  total?: number;
+  per?: number;
+}) {
   return (
     <>
       <div className="ad-table-wrap">
         <table className={`ad-table ${dense ? "is-dense" : ""} ${className}`}>
-          <thead><tr>{cols.map((c, i) => <th key={i} className={c.num ? "num" : ""}>{c.label}</th>)}</tr></thead>
+          <thead>
+            <tr>
+              {cols.map((c, i) => (
+                <th key={i} className={c.num ? "num" : ""}>
+                  {c.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={rowKey(r, i)} className={onRow ? "click" : ""} onClick={onRow ? () => onRow(r) : undefined}>
-                {cols.map((c, j) => <td key={j} className={c.num ? "num" : ""} data-label={typeof c.label === "string" ? c.label : ""}>{c.render(r, i)}</td>)}
+              <tr
+                key={rowKey(r, i)}
+                className={onRow ? "click" : ""}
+                onClick={onRow ? () => onRow(r) : undefined}
+              >
+                {cols.map((c, j) => (
+                  <td
+                    key={j}
+                    className={c.num ? "num" : ""}
+                    data-label={typeof c.label === "string" ? c.label : ""}
+                  >
+                    {c.render(r, i)}
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
@@ -232,55 +938,161 @@ export function Table<R>({ cols, rows, onRow, rowKey, dense, className = "", tot
   );
 }
 
-export const CellUser = ({ name, sub, avatar = true }: { name: string; sub?: ReactNode; avatar?: boolean }) => (
-  <div className="cell-user">{avatar ? <Avatar name={name} /> : null}<div><b>{name}</b>{sub ? <small>{sub}</small> : null}</div></div>
+export const CellUser = ({
+  name,
+  sub,
+  avatar = true,
+}: {
+  name: string;
+  sub?: ReactNode;
+  avatar?: boolean;
+}) => (
+  <div className="cell-user">
+    {avatar ? <Avatar name={name} /> : null}
+    <div>
+      <b>{name}</b>
+      {sub ? <small>{sub}</small> : null}
+    </div>
+  </div>
 );
 
 /** Etiqueta de estado com cor semântica. */
 const STATUS: Record<string, [string, Tone]> = {
-  approved: ["Aprovada", "success"], pending: ["Pendente", "warning"], declined: ["Recusada", "danger"], refunded: ["Reembolsada", "neutral"], chargeback: ["Chargeback", "danger"], expired: ["Expirada", "neutral"],
-  active: ["Ativo", "success"], in_review: ["Em análise", "warning"], pending_review: ["A aguardar análise", "warning"], changes_requested: ["Alterações pedidas", "warning"], draft: ["Rascunho", "neutral"], archived: ["Arquivado", "neutral"], suspended: ["Suspenso", "danger"],
-  past_due: ["Em atraso", "warning"], canceled: ["Cancelada", "neutral"],
-  paid: ["Pago", "success"], processing: ["Em processamento", "info"], pending_payment: ["A aguardar pagamento", "warning"], pending_approval: ["A aguardar aprovação", "warning"], failed: ["Falhou", "danger"], rejected: ["Rejeitado", "danger"],
-  verified: ["Verificado", "success"], blocked: ["Bloqueado", "danger"],
-  open: ["Aberta", "warning"], won: ["Ganha", "success"], lost: ["Perdida", "danger"], resolved: ["Resolvida", "success"],
+  approved: ["Aprovada", "success"],
+  pending: ["Pendente", "warning"],
+  declined: ["Recusada", "danger"],
+  refunded: ["Reembolsada", "neutral"],
+  chargeback: ["Chargeback", "danger"],
+  expired: ["Expirada", "neutral"],
+  active: ["Ativo", "success"],
+  in_review: ["Em análise", "warning"],
+  pending_review: ["A aguardar análise", "warning"],
+  changes_requested: ["Alterações pedidas", "warning"],
+  draft: ["Rascunho", "neutral"],
+  archived: ["Arquivado", "neutral"],
+  suspended: ["Suspenso", "danger"],
+  past_due: ["Em atraso", "warning"],
+  canceled: ["Cancelada", "neutral"],
+  paid: ["Pago", "success"],
+  processing: ["Em processamento", "info"],
+  pending_payment: ["A aguardar pagamento", "warning"],
+  pending_approval: ["A aguardar aprovação", "warning"],
+  failed: ["Falhou", "danger"],
+  rejected: ["Rejeitado", "danger"],
+  verified: ["Verificado", "success"],
+  blocked: ["Bloqueado", "danger"],
+  open: ["Aberta", "warning"],
+  won: ["Ganha", "success"],
+  lost: ["Perdida", "danger"],
+  resolved: ["Resolvida", "success"],
   expired_coupon: ["Expirado", "neutral"],
 };
-export const Status = ({ s, label }: { s: string; label?: string }) => { const [l, t] = STATUS[s] ?? [s, "neutral"]; return <Badge tone={t} dot>{label ?? l}</Badge>; };
+export const Status = ({ s, label }: { s: string; label?: string }) => {
+  const [l, t] = STATUS[s] ?? [s, "neutral"];
+  return (
+    <Badge tone={t} dot>
+      {label ?? l}
+    </Badge>
+  );
+};
 
 export const Method = ({ m }: { m: PaymentMethod | PayoutDestinationKind }) => (
-  <span className={`pm pm-${m}`}><i />{m === "bank" ? "Banco" : METHODS[m].label}</span>
+  <span className={`pm pm-${m}`}>
+    <i />
+    {m === "bank" ? "Banco" : METHODS[m].label}
+  </span>
 );
 export { PayLogo, maskPhone };
 
-export function Spark({ data, color = "var(--primary)", w = 120, h = 32 }: { data: number[]; color?: string; w?: number; h?: number }) {
-  const max = Math.max(...data), min = Math.min(...data);
-  const pts = data.map((v, i) => [(i * w) / (data.length - 1), h - 2 - ((v - min) / (max - min || 1)) * (h - 4)]);
+export function Spark({
+  data,
+  color = "var(--primary)",
+  w = 120,
+  h = 32,
+}: {
+  data: number[];
+  color?: string;
+  w?: number;
+  h?: number;
+}) {
+  const max = Math.max(...data),
+    min = Math.min(...data);
+  const pts = data.map((v, i) => [
+    (i * w) / (data.length - 1),
+    h - 2 - ((v - min) / (max - min || 1)) * (h - 4),
+  ]);
   const l = pts.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("");
   return (
-    <svg className="vq-spark" width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ ["--sc" as string]: color }} aria-hidden="true">
-      <path className="a" d={`${l}L${w},${h}L0,${h}Z`} /><path className="l" d={l} vectorEffect="non-scaling-stroke" />
+    <svg
+      className="vq-spark"
+      width="100%"
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="none"
+      style={{ ["--sc" as string]: color }}
+      aria-hidden="true"
+    >
+      <path className="a" d={`${l}L${w},${h}L0,${h}Z`} />
+      <path className="l" d={l} vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
 
-export function Timeline({ items }: { items: { title: ReactNode; sub?: ReactNode; tone: Tone; icon: IconName }[] }) {
+export function Timeline({
+  items,
+}: {
+  items: { title: ReactNode; sub?: ReactNode; tone: Tone; icon: IconName }[];
+}) {
   return (
     <ol className="timeline">
       {items.map((it, i) => (
-        <li key={i} className={`ad-tone-${it.tone}`}><span className="tl-dot"><Icon name={it.icon} size={13} /></span><div className="tl-body"><b>{it.title}</b>{it.sub ? <small>{it.sub}</small> : null}</div></li>
+        <li key={i} className={`ad-tone-${it.tone}`}>
+          <span className="tl-dot">
+            <Icon name={it.icon} size={13} />
+          </span>
+          <div className="tl-body">
+            <b>{it.title}</b>
+            {it.sub ? <small>{it.sub}</small> : null}
+          </div>
+        </li>
       ))}
     </ol>
   );
 }
 
-export function Skeleton({ h = 120 }: { h?: number }) { return <div className="ad-skel" style={{ height: h, borderRadius: 16 }} />; }
+export function Skeleton({ h = 120 }: { h?: number }) {
+  return <div className="ad-skel" style={{ height: h, borderRadius: 16 }} />;
+}
 export function Loading({ rows = 3 }: { rows?: number }) {
-  return <div className="stack-sm" aria-busy="true" aria-label="A carregar">{Array.from({ length: rows }, (_, i) => <Skeleton key={i} h={i ? 64 : 120} />)}</div>;
+  return (
+    <div className="stack-sm" aria-busy="true" aria-label="A carregar">
+      {Array.from({ length: rows }, (_, i) => (
+        <Skeleton key={i} h={i ? 64 : 120} />
+      ))}
+    </div>
+  );
 }
 export function ErrorState({ error, retry }: { error: unknown; retry?: () => void }) {
-  return <Alert tone="danger" icon="alert" title="Não foi possível carregar estes dados" text={error instanceof Error ? error.message : "Verifique a ligação e tente outra vez."} action={retry ? <Btn s="sm" onClick={retry}>Tentar outra vez</Btn> : undefined} />;
+  return (
+    <Alert
+      tone="danger"
+      icon="alert"
+      title="Não foi possível carregar estes dados"
+      text={error instanceof Error ? error.message : "Verifique a ligação e tente outra vez."}
+      action={
+        retry ? (
+          <Btn s="sm" onClick={retry}>
+            Tentar outra vez
+          </Btn>
+        ) : undefined
+      }
+    />
+  );
 }
 
 export const useFieldId = () => useId().replace(/:/g, "");
-export const Cover = ({ cover, icon, lg }: { cover: string; icon: IconName; lg?: boolean }) => <span className={`cover ${lg ? "lg" : ""} cv-${cover}`}><Icon name={icon} size={lg ? 26 : 18} /></span>;
+export const Cover = ({ cover, icon, lg }: { cover: string; icon: IconName; lg?: boolean }) => (
+  <span className={`cover ${lg ? "lg" : ""} cv-${cover}`}>
+    <Icon name={icon} size={lg ? 26 : 18} />
+  </span>
+);

@@ -2,14 +2,14 @@
 
 ## Rotas
 
-| Operação | Método e caminho, depois de `/v1` |
-|---|---|
-| Consultar produto | `GET /public/products/{slug}` |
-| Consultar métodos | `GET /payments/methods` |
-| Criar encomenda e iniciar cobrança | `POST /checkout/orders` |
-| Consultar resultado | `GET /checkout/orders/{id}` |
+| Operação                              | Método e caminho, depois de `/v1`             |
+| ------------------------------------- | --------------------------------------------- |
+| Consultar produto                     | `GET /public/products/{slug}`                 |
+| Consultar métodos                     | `GET /payments/methods`                       |
+| Criar encomenda e iniciar cobrança    | `POST /checkout/orders`                       |
+| Consultar resultado                   | `GET /checkout/orders/{id}`                   |
 | Nova tentativa confirmada como segura | `POST /checkout/orders/{id}/payment-attempts` |
-| Associar compra de convidado | `POST /checkout/orders/{id}/claim` |
+| Associar compra de convidado          | `POST /checkout/orders/{id}/claim`            |
 
 A criação envia `productId`, `offerId`, `method`, `msisdn` e, sem sessão, `buyer: { name, email, msisdn }`. O fluxo actual apresenta apenas M-Pesa e e-Mola quando o método está activo e operacional.
 

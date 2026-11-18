@@ -4,7 +4,14 @@ export type Money = number;
 export type Role = "seller" | "admin" | "student";
 export type PaymentMethod = "mpesa" | "emola";
 export type PayoutDestinationKind = "mpesa" | "emola" | "bank";
-export type KycStatus = "not_started" | "draft" | "pending" | "in_review" | "approved" | "changes_requested" | "rejected";
+export type KycStatus =
+  | "not_started"
+  | "draft"
+  | "pending"
+  | "in_review"
+  | "approved"
+  | "changes_requested"
+  | "rejected";
 
 export interface ApiError {
   code: string;

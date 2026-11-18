@@ -19,8 +19,13 @@ function blocks(css) {
     const open = css.indexOf("{", i);
     if (open < 0) break;
     const head = css.slice(i, open).trim();
-    let depth = 1, j = open + 1;
-    while (j < css.length && depth) { if (css[j] === "{") depth++; else if (css[j] === "}") depth--; j++; }
+    let depth = 1,
+      j = open + 1;
+    while (j < css.length && depth) {
+      if (css[j] === "{") depth++;
+      else if (css[j] === "}") depth--;
+      j++;
+    }
     out.push({ head, body: css.slice(open + 1, j - 1) });
     i = j;
   }
@@ -29,10 +34,16 @@ function blocks(css) {
 
 // Separa uma lista de seletores pelas vírgulas de topo (ignora as que estão dentro de parênteses).
 function splitSelectors(s) {
-  const parts = []; let depth = 0, cur = "";
+  const parts = [];
+  let depth = 0,
+    cur = "";
   for (const ch of s) {
-    if (ch === "(") depth++; if (ch === ")") depth--;
-    if (ch === "," && !depth) { parts.push(cur); cur = ""; } else cur += ch;
+    if (ch === "(") depth++;
+    if (ch === ")") depth--;
+    if (ch === "," && !depth) {
+      parts.push(cur);
+      cur = "";
+    } else cur += ch;
   }
   parts.push(cur);
   return parts.map((p) => p.trim()).filter(Boolean);
@@ -45,11 +56,16 @@ function scopeSelector(sel, scope) {
 }
 
 function scopeCss(css, scope) {
-  return blocks(css).map(({ head, body }) => {
-    if (head.startsWith("@media") || head.startsWith("@supports")) return `${head} {\n${scopeCss(body, scope)}\n}`;
-    if (head.startsWith("@")) return `${head} {${body}}`;
-    return `${splitSelectors(head).map((s) => scopeSelector(s, scope)).join(", ")} {${body}}`;
-  }).join("\n");
+  return blocks(css)
+    .map(({ head, body }) => {
+      if (head.startsWith("@media") || head.startsWith("@supports"))
+        return `${head} {\n${scopeCss(body, scope)}\n}`;
+      if (head.startsWith("@")) return `${head} {${body}}`;
+      return `${splitSelectors(head)
+        .map((s) => scopeSelector(s, scope))
+        .join(", ")} {${body}}`;
+    })
+    .join("\n");
 }
 
 const recolor = (css, map) => Object.entries(map).reduce((s, [a, b]) => s.split(a).join(b), css);
