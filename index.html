@@ -3,25 +3,31 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="description" content="VendAqui — plataforma para vender cursos, ebooks e mentorias com Apple Pay, Google Pay, M-Pesa, e-Mola e cartão." />
+    <meta
+      name="description"
+      content="VendAqui — venda ebooks e cursos em Moçambique com pagamentos por M-Pesa e e-Mola."
+    />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#3fc958" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Public+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <title>VendAqui</title>
     <script>
       // aplica visual e tema antes do primeiro desenho para não piscar
       try {
-        // VITE_DEFAULT_SKIN é substituído pelo Vite no build; sem variável fica "cakto" (verde)
-        var def = "%VITE_DEFAULT_SKIN%";
-        if (!/^(academia|cakto|cakto-laranja)$/.test(def)) def = "cakto";
+        var def = "cakto";
         var sk = JSON.parse(localStorage.getItem("vq.skin") || "null");
         var th = JSON.parse(localStorage.getItem("vq.theme") || "null");
         document.documentElement.setAttribute("data-skin", sk || def);
         if (th) document.documentElement.setAttribute("data-theme", th);
-      } catch (e) { document.documentElement.setAttribute("data-skin", "cakto"); }
+      } catch (e) {
+        document.documentElement.setAttribute("data-skin", "cakto");
+      }
     </script>
   </head>
   <body>

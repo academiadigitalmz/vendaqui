@@ -1,88 +1,146 @@
-import { createBrowserRouter, Navigate, RouterProvider, Outlet } from "react-router-dom";
-import { AreaSwitcher, ConsoleLayout, PublicLayout, RequireRole, StudentLayout } from "@/layouts/Shells";
+import { createBrowserRouter, Navigate, Outlet, RouterProvider, useParams } from "react-router-dom";
+import {
+  AreaSwitcher,
+  ConsoleLayout,
+  PublicLayout,
+  RequireRole,
+  RequireSeller,
+  RequireUser,
+  StudentLayout,
+} from "@/layouts/Shells";
 import Landing from "@/pages/public/Landing";
-import Checkout, { ThankYou } from "@/pages/public/Checkout";
-import { Login, Register } from "@/pages/public/Auth";
-import { Library, Lesson, Purchases } from "@/pages/student/Student";
-import Dashboard from "@/pages/seller/Dashboard";
-import Products, { NewProduct, ProductPage } from "@/pages/seller/Products";
-import Sales, { Customers, Subscriptions } from "@/pages/seller/Sales";
-import { Affiliates, Coupons, Members, Recovery } from "@/pages/seller/Growth";
-import { Account, Finance, Integrations } from "@/pages/seller/Account";
-import * as A from "@/pages/admin/Admin";
+import Purchase, { ThankYou } from "@/pages/public/Purchase";
+import PurchasedContent from "@/pages/public/PurchasedContent";
+import { AdminLogin, Login, Register } from "@/pages/public/Auth";
+import { Library, Purchases } from "@/pages/student/Student";
+import {
+  NewProduct,
+  SellerAccount,
+  SellerFinance,
+  SellerOrders,
+  SellerOverview,
+  SellerProduct,
+  SellerProducts,
+  SellerSetup,
+  SellerVerification,
+} from "@/pages/seller/Seller";
+import { Kyc, Moderation, Orders, Overview, Payouts, Sellers } from "@/pages/admin/Admin";
+import { NotificationsPage } from "@/components/Notifications";
 
-function Root() {
-  return (<><Outlet />{import.meta.env.VITE_SHOW_SWITCHER !== "false" ? <AreaSwitcher /> : null}</>);
-}
+const title = (value: string) => ({ handle: { title: value } });
+const Root = () => (
+  <>
+    <Outlet />
+    <AreaSwitcher />
+  </>
+);
+const LegacyPurchasedContent = () => {
+  const { productId = "" } = useParams();
+  return <Navigate to={`/aluno/produtos/${productId}`} replace />;
+};
 
-const t = (title: string) => ({ handle: { title } });
-
-export const router = createBrowserRouter([
-  {
-    element: <Root />,
-    children: [
-      {
-        element: <PublicLayout />,
-        children: [
-          { path: "/", element: <Landing />, ...t("") },
-          { path: "/checkout/:slug", element: <Checkout />, ...t("Checkout") },
-          { path: "/checkout", element: <Navigate to="/checkout/excel-zero-avancado" replace /> },
-          { path: "/obrigado/:orderId", element: <ThankYou />, ...t("Compra concluída") },
-          { path: "/entrar", element: <Login />, ...t("Entrar") },
-          { path: "/criar-conta", element: <Register />, ...t("Criar conta") },
-        ],
-      },
-      {
-        path: "/aluno",
-        element: <RequireRole role="student"><StudentLayout /></RequireRole>,
-        children: [
-          { index: true, element: <Library />, ...t("Área do aluno") },
-          { path: "aulas/:lessonId", element: <Lesson />, ...t("Aula") },
-          { path: "compras", element: <Purchases />, ...t("Compras") },
-        ],
-      },
-      {
-        path: "/produtor",
-        element: <RequireRole role="seller"><ConsoleLayout kind="seller" /></RequireRole>,
-        children: [
-          { index: true, element: <Dashboard />, ...t("Painel") },
-          { path: "produtos", element: <Products />, ...t("Produtos") },
-          { path: "produtos/novo", element: <NewProduct />, ...t("Novo produto") },
-          { path: "produtos/:id", element: <ProductPage />, ...t("Produto") },
-          { path: "vendas", element: <Sales />, ...t("Vendas") },
-          { path: "assinaturas", element: <Subscriptions />, ...t("Assinaturas") },
-          { path: "clientes", element: <Customers />, ...t("Clientes") },
-          { path: "afiliados", element: <Affiliates />, ...t("Afiliados") },
-          { path: "cupoes", element: <Coupons />, ...t("Cupões") },
-          { path: "recuperacao", element: <Recovery />, ...t("Recuperação de vendas") },
-          { path: "membros", element: <Members />, ...t("Área de membros") },
-          { path: "financeiro", element: <Finance />, ...t("Financeiro") },
-          { path: "integracoes", element: <Integrations />, ...t("Integrações") },
-          { path: "conta", element: <Account />, ...t("Definições da conta") },
-        ],
-      },
-      {
-        path: "/admin",
-        element: <RequireRole role="admin"><ConsoleLayout kind="admin" /></RequireRole>,
-        children: [
-          { index: true, element: <A.Overview />, ...t("Visão geral") },
-          { path: "transacoes", element: <A.Transactions />, ...t("Transações") },
-          { path: "saques", element: <A.Payouts />, ...t("Saques") },
-          { path: "disputas", element: <A.Disputes />, ...t("Reembolsos e disputas") },
-          { path: "produtores", element: <A.Sellers />, ...t("Produtores") },
-          { path: "kyc", element: <A.Kyc />, ...t("Verificação KYC") },
-          { path: "produtos", element: <A.Moderation />, ...t("Produtos em análise") },
-          { path: "antifraude", element: <A.Risk_ />, ...t("Antifraude") },
-          { path: "pagamentos", element: <A.Gateways />, ...t("Métodos de pagamento") },
-          { path: "taxas", element: <A.Fees />, ...t("Taxas e planos") },
-          { path: "equipa", element: <A.Team />, ...t("Equipa e acessos") },
-          { path: "auditoria", element: <A.Audit />, ...t("Registo de auditoria") },
-        ],
-      },
-      { path: "*", element: <Navigate to="/" replace /> },
-    ],
-  },
-], { basename: import.meta.env.BASE_URL.replace(/\/$/, "") || "/" });
+export const router = createBrowserRouter(
+  [
+    {
+      element: <Root />,
+      children: [
+        {
+          element: <PublicLayout />,
+          children: [
+            { path: "/", element: <Landing />, ...title("") },
+            { path: "/checkout/:slug", element: <Purchase />, ...title("Checkout") },
+            { path: "/obrigado/:orderId", element: <ThankYou />, ...title("Compra") },
+            { path: "/entrar", element: <Login />, ...title("Entrar") },
+            { path: "/criar-conta", element: <Register />, ...title("Criar conta") },
+            { path: "/admin/entrar", element: <AdminLogin />, ...title("Backoffice") },
+            {
+              path: "/produtor/configurar",
+              element: (
+                <RequireUser>
+                  <SellerSetup />
+                </RequireUser>
+              ),
+              ...title("Configurar produtor"),
+            },
+            {
+              path: "/compras/:productId/conteudo",
+              element: (
+                <RequireUser>
+                  <LegacyPurchasedContent />
+                </RequireUser>
+              ),
+              ...title("Conteúdo comprado"),
+            },
+          ],
+        },
+        {
+          path: "/aluno",
+          element: (
+            <RequireUser>
+              <StudentLayout />
+            </RequireUser>
+          ),
+          children: [
+            { index: true, element: <Library />, ...title("Os meus produtos") },
+            { path: "compras", element: <Purchases />, ...title("Compras") },
+            { path: "produtos/:productId", element: <PurchasedContent />, ...title("Conteúdo") },
+            {
+              path: "notificacoes",
+              element: <NotificationsPage audience="user" area="student" />,
+              ...title("Notificações"),
+            },
+          ],
+        },
+        {
+          path: "/produtor",
+          element: (
+            <RequireSeller>
+              <ConsoleLayout kind="seller" />
+            </RequireSeller>
+          ),
+          children: [
+            { index: true, element: <SellerOverview />, ...title("Painel") },
+            { path: "produtos", element: <SellerProducts />, ...title("Produtos") },
+            { path: "produtos/novo", element: <NewProduct />, ...title("Novo produto") },
+            { path: "produtos/:id", element: <SellerProduct />, ...title("Produto") },
+            { path: "vendas", element: <SellerOrders />, ...title("Vendas") },
+            { path: "verificacao", element: <SellerVerification />, ...title("Verificação") },
+            { path: "financeiro", element: <SellerFinance />, ...title("Financeiro") },
+            { path: "conta", element: <SellerAccount />, ...title("Perfil comercial") },
+            {
+              path: "notificacoes",
+              element: <NotificationsPage audience="user" area="seller" />,
+              ...title("Notificações"),
+            },
+          ],
+        },
+        {
+          path: "/admin",
+          element: (
+            <RequireRole role="admin">
+              <ConsoleLayout kind="admin" />
+            </RequireRole>
+          ),
+          children: [
+            { index: true, element: <Overview />, ...title("Backoffice") },
+            { path: "encomendas", element: <Orders />, ...title("Encomendas") },
+            { path: "saques", element: <Payouts />, ...title("Saques") },
+            { path: "produtores", element: <Sellers />, ...title("Produtores") },
+            { path: "kyc", element: <Kyc />, ...title("Verificação KYC") },
+            { path: "produtos", element: <Moderation />, ...title("Moderação") },
+            {
+              path: "notificacoes",
+              element: <NotificationsPage audience="backoffice" area="admin" />,
+              ...title("Notificações"),
+            },
+          ],
+        },
+        { path: "*", element: <Navigate to="/" replace /> },
+      ],
+    },
+  ],
+  { basename: import.meta.env.BASE_URL.replace(/\/$/, "") || "/" },
+);
 
 export default function App() {
   return <RouterProvider router={router} />;

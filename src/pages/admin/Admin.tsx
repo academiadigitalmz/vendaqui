@@ -1,368 +1,1096 @@
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/endpoints";
-import type { Dispute, KycDecision, SellerRow } from "@/api/types";
-import { Icon, PayLogo, type IconName } from "@/lib/icons";
-import { date, initials, int, maskPhone, mt, num, pct, short } from "@/lib/format";
-import { METHODS } from "@/lib/methods";
+import { HttpError } from "@/api/http";
+import { date, mt } from "@/lib/format";
 import { useApp } from "@/lib/app-state";
-import { Alert, Avatar, Badge, Btn, Card, CellUser, Cover, Field, IconBtn, Input, Kpi, Meter, Method, PageHead, Select, Status, Switch, Table, Tabs, Textarea, Tile, type Tone } from "@/components/ui";
 import { AreaChart } from "@/components/chart";
-import { Data } from "@/components/Data";
-import { Drawer, Modal } from "@/components/overlay";
-import { SaleDrawer } from "@/pages/seller/Dashboard";
-import { TYPE_META } from "@/pages/seller/Products";
+import { Drawer } from "@/components/overlay";
+import {
+  Alert,
+  Btn,
+  Card,
+  Checkbox,
+  Empty,
+  ErrorState,
+  Input,
+  Kpi,
+  Loading,
+  PageHead,
+  Select,
+  Status,
+  Table,
+  Textarea,
+  Tile,
+} from "@/components/ui";
 
-const riskColor = (r: number) => (r >= 70 ? "var(--danger)" : r >= 40 ? "var(--warning)" : "var(--success)");
-const Risk = ({ r }: { r: number }) => <span className="risk"><Meter value={r} color={riskColor(r)} />{r}</span>;
-const SELLER_STATUS: Record<SellerRow["status"], string> = { verified: "verified", in_review: "in_review", blocked: "blocked" };
+const errorText = (error: unknown) =>
+  error instanceof HttpError
+    ? error.message
+    : "Não foi possível concluir. Verifique a ligação e tente novamente.";
 
 export function Overview() {
-  const q = useQuery({ queryKey: ["admin", "overview"], queryFn: api.admin.overview });
-  const [seller, setSeller] = useState<SellerRow | null>(null);
-  const QUEUE: Record<string, [IconName, Tone, string, string]> = { kyc: ["idcard", "warning", "Verificações KYC", "/admin/kyc"], payouts: ["cash", "info", "Saques para aprovar", "/admin/saques"], moderation: ["package", "purple", "Produtos em análise", "/admin/produtos"], disputes: ["scale", "danger", "Disputas abertas", "/admin/disputas"] };
+  const finance = useQuery({
+    queryKey: ["backoffice", "finance-overview"],
+    queryFn: api.backoffice.financeOverview,
+  });
+  const orders = useQuery({
+    queryKey: ["backoffice", "orders", "dashboard"],
+    queryFn: () => api.backoffice.orders(),
+  });
+  const kyc = useQuery({
+    queryKey: ["backoffice", "kyc", "pending"],
+    queryFn: () => api.backoffice.verifications("pending"),
+  });
+  const moderation = useQuery({
+    queryKey: ["backoffice", "moderation", "pending"],
+    queryFn: () => api.backoffice.moderation("pending"),
+  });
+  const payouts = useQuery({
+    queryKey: ["backoffice", "payouts", "pending_approval"],
+    queryFn: () => api.backoffice.payouts("pending_approval"),
+  });
+  const queries = [finance, orders, kyc, moderation, payouts];
+  const pending = queries.some((query) => query.isPending);
+  const failed = queries.find((query) => query.isError);
+  if (pending) return <Loading />;
+  if (failed) return <ErrorState error={failed.error} />;
+
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const value = new Date();
+    value.setHours(0, 0, 0, 0);
+    value.setDate(value.getDate() - (6 - index));
+    return value;
+  });
+  const paidOrders = orders.data!.items.filter((order) => order.status === "paid");
+  const volume = days.map((day) =>
+    paidOrders
+      .filter((order) => {
+        const created = new Date(order.createdAt);
+        return (
+          created.getFullYear() === day.getFullYear() &&
+          created.getMonth() === day.getMonth() &&
+          created.getDate() === day.getDate()
+        );
+      })
+      .reduce((total, order) => total + order.totalAmount, 0),
+  );
+  const labels = days.map((day) =>
+    day.toLocaleDateString("pt-MZ", { day: "2-digit", month: "short" }).replace(".", ""),
+  );
+
   return (
-    <Data q={q} rows={4}>{(d) => (<>
-      <div className="live"><div className="live-head"><span className="pulse" /><b>Agora</b><small>atualizado há 4 s</small></div><div className="live-grid">
-        <div><small>Volume hoje (GMV)</small><strong>{mt(d.live.gmvToday, 0)}</strong><span>+{num(d.live.gmvDelta, 1)}% vs. semana passada</span></div>
-        <div><small>Transações hoje</small><strong>{int(d.live.txToday)}</strong><span>{d.live.txLastHour} na última hora</span></div>
-        <div><small>Taxa de aprovação</small><strong>{pct(d.live.approval)}</strong><span>M-Pesa 98,1% · Cartão 86,3%</span></div>
-        <div><small>Receita da plataforma</small><strong>{mt(d.live.platformRevenueToday, 0)}</strong><span>Taxas líquidas de custos</span></div>
-        <div><small>Produtores a vender</small><strong>{int(d.live.sellersSelling)}</strong><span>de {int(d.live.sellersActive)} ativos</span></div>
-      </div></div>
+    <>
+      <PageHead title="Backoffice" desc="Visão operacional e financeira da plataforma." />
       <div className="g4">
-        <Kpi label="GMV · 30 dias" value={`${short(d.kpis.gmv30d)} MT`} icon="trendup" delta={d.kpis.gmvDelta} />
-        <Kpi label="Receita líquida · 30 dias" value={mt(d.kpis.revenue30d, 0)} icon="wallet" tone="success" delta={d.kpis.revenueDelta} />
-        <Kpi label="Chargebacks" value={pct(d.kpis.chargebackRate, 2)} icon="scale" tone="danger" hint="Limite das bandeiras: 0,90%" />
-        <Kpi label="Saldo a pagar a produtores" value={`${short(d.kpis.owedToSellers)} MT`} icon="cash" tone="info" hint="Inclui reservas de 5%" />
+        <Kpi
+          label="Pagamentos confirmados"
+          value={mt(finance.data!.confirmedPayments)}
+          hint="Volume confirmado"
+        />
+        <Kpi
+          label="Receita de comissões"
+          value={mt(finance.data!.commissionRevenue)}
+          hint="Comissões registadas"
+        />
+        <Kpi
+          label="Saques em trânsito"
+          value={mt(finance.data!.payoutsInFlight)}
+          hint="Já em processamento"
+        />
       </div>
       <div className="g-main">
-        <Card title="Volume e receita" icon="activity" aside={<div className="legend"><span><i />GMV</span><span><i className="is-2" />Receita × 10</span></div>}>
-          <AreaChart data={d.series.map((s) => s.gmv)} data2={d.series.map((s) => s.revenue * 10)} labels={d.series.map((s) => s.label)} name1="GMV" name2="Receita × 10" aria="Volume diário e receita da plataforma" h={250} />
+        <Card
+          title="Volume confirmado"
+          aside={
+            <span className="faint">Últimas {orders.data!.items.length} encomendas carregadas</span>
+          }
+        >
+          {volume.some(Boolean) ? (
+            <AreaChart
+              data={volume}
+              labels={labels}
+              name1="Volume"
+              aria="Volume diário das encomendas pagas carregadas"
+              h={250}
+            />
+          ) : (
+            <Empty icon="bars" title="Ainda não existe volume confirmado neste período" />
+          )}
         </Card>
-        <Card title="Fila de trabalho" icon="checkc" tone="neutral"><div className="stack-sm">{d.queue.map((x) => { const [i, t, l, to] = QUEUE[x.key]; return (
-          <Link key={x.key} className="queue-item" to={to} style={{ textDecoration: "none" }}><Tile icon={i} tone={t} /><span className="stack-xs" style={{ gap: 0 }}><b>{l}</b><small className="faint">{x.note}</small></span><span className="n">{x.count}</span></Link>
-        ); })}</div></Card>
+        <Card title="Fila de trabalho">
+          <div className="stack-sm">
+            <QueueLink
+              to="/admin/kyc"
+              icon="idcard"
+              tone="warning"
+              label="Verificações KYC"
+              count={kyc.data!.total}
+            />
+            <QueueLink
+              to="/admin/produtos"
+              icon="package"
+              tone="purple"
+              label="Produtos em análise"
+              count={moderation.data!.total}
+            />
+            <QueueLink
+              to="/admin/saques"
+              icon="cash"
+              tone="info"
+              label="Saques para aprovar"
+              count={payouts.data!.total}
+            />
+          </div>
+        </Card>
       </div>
-      <div className="g2">
-        <Card title="Saúde dos métodos de pagamento" icon="route" tone="info" aside={<Link className="ad-link" to="/admin/pagamentos">Configurar</Link>}>
-          {d.gateways.map((g) => <div key={g.id} className="gw"><span className={`status-dot ${g.status === "operational" ? "" : "warn"}`} /><div className="grow stack-xs" style={{ gap: 0 }}><b style={{ fontSize: 14 }}>{g.name}</b><small className="faint">{g.note ?? "Operacional"}</small></div><div className="gw-stat"><b>{pct(g.approval)}</b>aprovação</div><div className="gw-stat" style={{ minWidth: 64 }}><b>{g.latencyMs >= 1000 ? `${num(g.latencyMs / 1000, 1)} s` : `${g.latencyMs} ms`}</b>latência</div></div>)}
-        </Card>
-        <Card title="Maiores produtores · 30 dias" icon="store" flush aside={<Link className="ad-link" to="/admin/produtores">Ver todos</Link>}>
-          <Table dense rows={d.topSellers} rowKey={(r) => r.id} onRow={setSeller} cols={[
-            { label: "Produtor", render: (r) => <CellUser name={r.business} sub={r.owner} /> },
-            { label: "GMV", num: true, render: (r) => mt(r.gmv30d, 0) },
-            { label: "Chargeback", num: true, render: (r) => <span style={{ color: r.chargebackRate > 1 ? "var(--danger)" : "inherit" }}>{pct(r.chargebackRate)}</span> },
-          ]} />
-        </Card>
-      </div>
-      {seller ? <SellerDrawer s={seller} onClose={() => setSeller(null)} /> : null}
-    </>)}</Data>
+      <Card
+        title="Encomendas recentes"
+        flush
+        aside={
+          <Link className="ad-link" to="/admin/encomendas">
+            Ver todas
+          </Link>
+        }
+      >
+        {orders.data!.items.length ? (
+          <OrdersTable rows={orders.data!.items.slice(0, 8)} />
+        ) : (
+          <Empty icon="receipt" title="Sem encomendas" />
+        )}
+      </Card>
+    </>
   );
 }
 
-function SellerDrawer({ s, onClose }: { s: SellerRow; onClose: () => void }) {
-  const { toast } = useApp();
-  const qc = useQueryClient();
-  const [fee, setFee] = useState(num(s.feePercent, 1));
-  const [fixed, setFixed] = useState(String(s.feeFixed));
-  const upd = useMutation({ mutationFn: (b: Partial<SellerRow>) => api.admin.updateSeller(s.id, b), onSuccess: (r) => { qc.invalidateQueries({ queryKey: ["admin"] }); toast("Produtor atualizado", r.business); onClose(); } });
+function QueueLink({
+  to,
+  icon,
+  tone,
+  label,
+  count,
+}: {
+  to: string;
+  icon: Parameters<typeof Tile>[0]["icon"];
+  tone: Parameters<typeof Tile>[0]["tone"];
+  label: string;
+  count: number;
+}) {
   return (
-    <Drawer over={s.id} title={s.business} sub={<div className="row" style={{ gap: 8 }}><Status s={SELLER_STATUS[s.status]} /><Badge v="outline">Plano {s.plan}</Badge></div>} onClose={onClose}
-      foot={<><Btn icon="eye" to="/produtor">Ver como produtor</Btn>{s.status === "blocked" ? <Btn v="primary" onClick={() => upd.mutate({ status: "verified" })}>Desbloquear</Btn> : <Btn v="danger" icon="ban" onClick={() => upd.mutate({ status: "blocked" })}>Suspender vendas</Btn>}<Btn v="primary" loading={upd.isPending} onClick={() => upd.mutate({ feePercent: Number(fee.replace(",", ".")), feeFixed: Number(fixed) })}>Guardar</Btn></>}>
-      <div className="g2" style={{ gap: 10 }}>{[["GMV 30 dias", mt(s.gmv30d, 0)], ["Saldo retido", mt(s.gmv30d * 0.11, 0)], ["Chargeback", pct(s.chargebackRate)], ["Reembolsos", pct(s.chargebackRate * 1.6 + 0.4)]].map(([a, b]) => <div key={a} className="kpi" style={{ padding: "12px 14px", boxShadow: "none" }}><span className="kpi-label">{a}</span><b style={{ fontSize: 17, fontVariantNumeric: "tabular-nums" }}>{b}</b></div>)}</div>
-      <section className="stack-sm"><h3 className="section-title">Titular</h3><dl className="dl"><dt>Nome</dt><dd>{s.owner}</dd><dt>NUIT</dt><dd className="mono">{s.nuit}</dd><dt>Categoria</dt><dd>{s.category}</dd><dt>Cliente desde</dt><dd>{s.since}</dd></dl></section>
-      <section className="stack-sm"><h3 className="section-title">Taxa aplicada</h3><div className="g2"><Field label="Percentagem" htmlFor="sl-p"><Input id="sl-p" value={fee} onChange={(e) => setFee(e.target.value)} suffix="%" /></Field><Field label="Fixo por venda" htmlFor="sl-f"><Input id="sl-f" value={fixed} onChange={(e) => setFixed(e.target.value)} suffix="MT" /></Field></div>
-        <Field label="Prazo de libertação para cartão" htmlFor="sl-d"><Select id="sl-d" options={["D+14 (padrão)", "D+7", "D+30"]} /></Field></section>
-      {s.chargebackRate > 1 ? <Alert tone="danger" icon="alert" title="Chargeback acima do limite" text={`${pct(s.chargebackRate)} nos últimos 30 dias. Recomendado aumentar a reserva para 20% e rever os produtos.`} /> : null}
-    </Drawer>
+    <Link className="queue-item" to={to} style={{ textDecoration: "none" }}>
+      <Tile icon={icon} tone={tone} />
+      <span className="grow">
+        <b>{label}</b>
+      </span>
+      <span className="n">{count}</span>
+    </Link>
   );
 }
 
 export function Sellers() {
-  const { toast } = useApp();
-  const [term, setTerm] = useState("");
-  const [sel, setSel] = useState<SellerRow | null>(null);
-  const q = useQuery({ queryKey: ["admin", "sellers", term], queryFn: () => api.admin.sellers(term), placeholderData: (p) => p });
-  return (<>
-    <PageHead title="Produtores" desc="3 412 contas ativas · 611 venderam hoje." actions={<Btn icon="download" onClick={() => toast("Exportação enviada", "rita@vendaqui.co.mz", "info", "mail")}>Exportar</Btn>} />
-    <div className="ad-filterbar"><Input icon="search" wrapClass="ad-search" placeholder="Nome, NUIT ou ID" value={term} onChange={(e) => setTerm(e.target.value)} aria-label="Procurar produtor" /><Select aria-label="Estado" options={["Todos os estados", "Verificado", "Em revisão", "Bloqueado"]} /><Select aria-label="Plano" options={["Todos os planos", "Padrão", "Escala", "Personalizado"]} /><span className="ad-filterbar-count">{q.data ? `${q.data.items.length} de ${int(q.data.total)}` : ""}</span></div>
-    <Data q={q}>{(d) => <Card flush><Table rows={d.items} rowKey={(r) => r.id} onRow={setSel} total={d.total} per={12} cols={[
-      { label: "Produtor", render: (r) => <CellUser name={r.business} sub={`${r.owner} · ${r.id}`} /> },
-      { label: "Categoria", render: (r) => r.category },
-      { label: "GMV 30 dias", num: true, render: (r) => mt(r.gmv30d, 0) },
-      { label: "Compradores", num: true, render: (r) => int(r.buyers) },
-      { label: "Chargeback", num: true, render: (r) => <span style={{ color: r.chargebackRate > 1 ? "var(--danger)" : "inherit", fontWeight: r.chargebackRate > 1 ? 600 : 400 }}>{pct(r.chargebackRate)}</span> },
-      { label: "Plano", render: (r) => <Badge tone={r.plan === "Escala" ? "primary" : "neutral"} v="outline">{r.plan}</Badge> },
-      { label: "Estado", render: (r) => <Status s={SELLER_STATUS[r.status]} /> },
-    ]} /></Card>}</Data>
-    {sel ? <SellerDrawer s={sel} onClose={() => setSel(null)} /> : null}
-  </>);
+  const client = useQueryClient();
+  const { prompt } = useApp();
+  const query = useQuery({
+    queryKey: ["backoffice", "sellers"],
+    queryFn: () => api.backoffice.sellers(),
+  });
+  const update = useMutation({
+    mutationFn: ({ id, status, reason }: { id: string; status: string; reason: string }) =>
+      api.backoffice.updateSellerStatus(id, status, reason),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["backoffice", "sellers"] }),
+  });
+  const changeStatus = async (id: string, status: "active" | "suspended") => {
+    const reason = await prompt({
+      title: status === "suspended" ? "Suspender produtor" : "Reactivar produtor",
+      message: "Esta alteração fica registada para auditoria.",
+      label: "Motivo da alteração",
+      placeholder: "Explique por que pretende alterar o estado desta conta.",
+      confirmLabel: status === "suspended" ? "Suspender" : "Reactivar",
+    });
+    if (reason !== null) update.mutate({ id, status, reason });
+  };
+  if (query.isPending) return <Loading />;
+  if (query.isError) return <ErrorState error={query.error} />;
+  return (
+    <>
+      <PageHead title="Produtores" desc="Perfis comerciais registados." />
+      {update.isError && (
+        <Alert
+          tone="danger"
+          title="Não foi possível alterar o produtor"
+          text={errorText(update.error)}
+        />
+      )}
+      <Card flush>
+        {query.data.items.length ? (
+          <Table
+            rows={query.data.items}
+            rowKey={(seller) => seller.id}
+            cols={[
+              {
+                label: "Produtor",
+                render: (seller) => (
+                  <>
+                    <strong>{seller.displayName}</strong>
+                    <br />
+                    <small>{seller.supportEmail}</small>
+                  </>
+                ),
+              },
+              { label: "NUIT", render: (seller) => seller.nuit || "—" },
+              { label: "Estado", render: (seller) => <Status s={seller.status} /> },
+              {
+                label: "Acção",
+                render: (seller) =>
+                  seller.status === "suspended" ? (
+                    <Btn s="sm" onClick={() => changeStatus(seller.id, "active")}>
+                      Reactivar
+                    </Btn>
+                  ) : (
+                    <Btn s="sm" v="danger" onClick={() => changeStatus(seller.id, "suspended")}>
+                      Suspender
+                    </Btn>
+                  ),
+              },
+            ]}
+          />
+        ) : (
+          <Empty icon="store" title="Sem produtores" />
+        )}
+      </Card>
+    </>
+  );
 }
 
 export function Kyc() {
-  const { toast } = useApp();
-  const qc = useQueryClient();
-  const [idx, setIdx] = useState(0);
-  const q = useQuery({ queryKey: ["admin", "kyc"], queryFn: api.admin.kyc });
-  const decide = useMutation({
-    mutationFn: ({ id, d }: { id: string; d: KycDecision }) => api.admin.decideKyc(id, d),
-    onSuccess: (_, v) => { const k = q.data?.find((x) => x.id === v.id); qc.invalidateQueries({ queryKey: ["admin"] }); setIdx(0); const m: Record<KycDecision, [string, string, "success" | "info" | "neutral", IconName]> = { approve: ["Conta aprovada", `${k?.business} já pode receber pagamentos`, "success", "checkc"], request_changes: ["Pedido de correção enviado", `Email e SMS para ${k?.name}`, "info", "send"], reject: ["Verificação rejeitada", `${k?.business} foi notificado`, "neutral", "x"] }; toast(...m[v.d]); },
+  const client = useQueryClient();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["backoffice", "kyc"],
+    queryFn: () => api.backoffice.verifications(),
   });
+  const start = useMutation({
+    mutationFn: (id: string) => api.backoffice.startVerification(id),
+    onSuccess: (_, id) => {
+      setSelectedId(id);
+      client.invalidateQueries({ queryKey: ["backoffice", "kyc"] });
+    },
+  });
+  if (query.isPending) return <Loading />;
+  if (query.isError) return <ErrorState error={query.error} />;
   return (
-    <Data q={q}>{(list) => {
-      if (!list.length) return (<><PageHead title="Verificação KYC" desc="Não há contas à espera de análise." /><Card><p className="muted">Tudo em dia. As novas contas aparecem aqui.</p></Card></>);
-      const k = list[Math.min(idx, list.length - 1)];
-      const ok = k.nameMatch === "yes";
-      return (<>
-        <PageHead title="Verificação KYC" desc={`${list.length} contas à espera de análise. Objetivo: responder em menos de 24 horas.`} />
-        <div className="kyc-layout">
-          <div className="kyc-list">{list.map((x, i) => (
-            <button key={x.id} className={`queue-item ${x.id === k.id ? "on" : ""}`} onClick={() => setIdx(i)}><Avatar name={x.name} s="md" /><span className="stack-xs grow" style={{ gap: 0 }}><b>{x.name}</b><small className="faint">{x.business} · há {x.waitingHours} h</small></span><span className="risk" style={{ color: x.faceMatch > 85 ? "var(--success)" : x.faceMatch > 60 ? "var(--warning)" : "var(--danger)" }}>{x.faceMatch}</span></button>
-          ))}</div>
-          <Card title={`${k.name} · ${k.business}`} foot={<div className="row" style={{ justifyContent: "flex-end", gap: 8 }}><Btn v="ghost" onClick={() => decide.mutate({ id: k.id, d: "reject" })}>Rejeitar</Btn><Btn onClick={() => decide.mutate({ id: k.id, d: "request_changes" })}>Pedir correção</Btn><Btn v="primary" icon="check" loading={decide.isPending} onClick={() => decide.mutate({ id: k.id, d: "approve" })}>Aprovar</Btn></div>}>
-            <div className="row" style={{ gap: 8 }}><Badge v="outline">{k.kind === "company" ? "Empresa" : "Pessoa singular"}</Badge><Badge tone="info">{k.category}</Badge><span className="faint" style={{ fontSize: 13 }}>Pedido há {k.waitingHours} h</span></div>
-            <div className="docs">{k.documents.map((d, i) => (
-              <div key={d} className="doc"><div className="doc-img">{i === 2 ? <span className="ad-avatar ad-avatar-xl">{initials(k.name)}</span> : <div className="idcard"><i /><span><em style={{ width: "80%" }} /><em /><em style={{ width: "60%" }} /><em style={{ width: "70%" }} /></span></div>}</div><div className="doc-cap"><span>{d}</span><IconBtn s="sm" icon="eye" label={`Ampliar ${d}`} onClick={() => toast(`${d} ampliado`, "", "info", "eye")} /></div></div>
-            ))}</div>
-            <div className="g2">
-              <div className="stack-sm"><h4 className="section-title" style={{ fontSize: 14 }}>Verificações automáticas</h4><div className="checks">
-                <div className={k.faceMatch > 60 ? "ok" : "bad"}><Icon name={k.faceMatch > 60 ? "checkc" : "xc"} size={18} /><span style={{ color: "var(--text)" }}>Rosto corresponde ao BI</span><b>{k.faceMatch}%</b></div>
-                <div className="ok"><Icon name="checkc" size={18} /><span style={{ color: "var(--text)" }}>NUIT válido na AT</span><b>{k.nuitValid ? "Sim" : "Não"}</b></div>
-                <div className={ok ? "ok" : "warn"}><Icon name={ok ? "checkc" : "alert"} size={18} /><span style={{ color: "var(--text)" }}>Nome igual no BI e na carteira</span><b>{ok ? "Sim" : k.nameMatch === "partial" ? "Parcial" : "Não"}</b></div>
-                <div className={k.riskCategory === "high" ? "bad" : "ok"}><Icon name={k.riskCategory === "high" ? "alert" : "checkc"} size={18} /><span style={{ color: "var(--text)" }}>Categoria de risco</span><b>{k.riskCategory === "high" ? "Alta" : "Baixa"}</b></div>
-              </div></div>
-              <div className="stack-sm"><h4 className="section-title" style={{ fontSize: 14 }}>Dados declarados</h4><dl className="dl"><dt>BI</dt><dd className="mono">{k.declared.bi}</dd><dt>NUIT</dt><dd className="mono">{k.declared.nuit}</dd><dt>Morada</dt><dd>{k.declared.city}</dd><dt>Carteira</dt><dd>{k.declared.wallet}</dd></dl></div>
+    <>
+      <PageHead
+        title="Verificações KYC"
+        desc="Analise os dados e documentos do produtor antes de tomar uma decisão."
+      />
+      {start.isError && (
+        <Alert
+          tone="danger"
+          title="Não foi possível iniciar a análise"
+          text={errorText(start.error)}
+        />
+      )}
+      <Card flush>
+        {query.data.items.length ? (
+          <Table
+            rows={query.data.items}
+            rowKey={(item) => item.id}
+            cols={[
+              {
+                label: "Verificação",
+                render: (item) => (
+                  <>
+                    <span className="mono">{item.id}</span>
+                    <br />
+                    <small className="faint">
+                      {item.submittedAt
+                        ? `Submetida em ${date(item.submittedAt)}`
+                        : "Ainda não submetida"}
+                    </small>
+                  </>
+                ),
+              },
+              { label: "Estado", render: (item) => <Status s={item.status} /> },
+              {
+                label: "Acção",
+                render: (item) =>
+                  item.status === "pending" ? (
+                    <Btn
+                      s="sm"
+                      v="primary"
+                      loading={start.isPending && start.variables === item.id}
+                      onClick={() => start.mutate(item.id)}
+                    >
+                      Iniciar análise
+                    </Btn>
+                  ) : (
+                    <Btn s="sm" onClick={() => setSelectedId(item.id)}>
+                      {item.status === "in_review" ? "Continuar análise" : "Ver detalhes"}
+                    </Btn>
+                  ),
+              },
+            ]}
+          />
+        ) : (
+          <Empty icon="idcard" title="Sem verificações" />
+        )}
+      </Card>
+      {selectedId && <KycReview id={selectedId} onClose={() => setSelectedId(null)} />}
+    </>
+  );
+}
+
+const documentLabel: Record<string, string> = {
+  national_id: "Documento de identificação",
+  nuit: "Documento NUIT",
+  business_registration: "Certidão comercial",
+};
+
+function KycReview({ id, onClose }: { id: string; onClose: () => void }) {
+  const client = useQueryClient();
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [viewedDocuments, setViewedDocuments] = useState<Set<string>>(new Set());
+  const [documentError, setDocumentError] = useState<string | null>(null);
+  const details = useQuery({
+    queryKey: ["backoffice", "kyc", id],
+    queryFn: () => api.backoffice.verification(id),
+  });
+  const sellerId = details.data?.verification.sellerId;
+  const seller = useQuery({
+    queryKey: ["backoffice", "seller", sellerId],
+    queryFn: () => api.backoffice.seller(sellerId!),
+    enabled: !!sellerId,
+  });
+  const decide = useMutation({
+    mutationFn: (action: "approve" | "reject" | "request-changes") =>
+      api.backoffice.decideVerification(id, action, reviewNotes.trim()),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["backoffice", "kyc"] });
+      client.invalidateQueries({ queryKey: ["backoffice", "sellers"] });
+      onClose();
+    },
+  });
+  const openDocument = async (documentId: string) => {
+    setDocumentError(null);
+    const tab = window.open("about:blank", "_blank");
+    if (tab) tab.opener = null;
+    try {
+      const access = await api.backoffice.verificationDocumentAccess(id, documentId);
+      setViewedDocuments((current) => new Set(current).add(documentId));
+      if (tab) tab.location.replace(access.url);
+      else window.open(access.url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      tab?.close();
+      setDocumentError(errorText(error));
+    }
+  };
+  if (details.isError || seller.isError)
+    return (
+      <Drawer over={id} title="Análise KYC" onClose={onClose}>
+        <ErrorState error={details.error ?? seller.error} />
+      </Drawer>
+    );
+  if (details.isPending || seller.isPending)
+    return (
+      <Drawer over={id} title="Análise KYC" onClose={onClose}>
+        <Loading />
+      </Drawer>
+    );
+  const verification = details.data.verification;
+  const allDocumentsViewed =
+    details.data.documents.length > 0 &&
+    details.data.documents.every((document) => viewedDocuments.has(document.id));
+  const canDecide =
+    verification.status === "in_review" && allDocumentsViewed && reviewNotes.trim().length > 0;
+  return (
+    <Drawer
+      over={id}
+      title={seller.data.displayName}
+      sub={<Status s={verification.status} />}
+      onClose={onClose}
+      foot={
+        verification.status === "in_review" ? (
+          <>
+            <Btn
+              onClick={() => decide.mutate("request-changes")}
+              disabled={!canDecide || decide.isPending}
+            >
+              Pedir alterações
+            </Btn>
+            <Btn
+              v="danger"
+              onClick={() => decide.mutate("reject")}
+              disabled={!canDecide || decide.isPending}
+            >
+              Rejeitar
+            </Btn>
+            <Btn
+              v="primary"
+              onClick={() => decide.mutate("approve")}
+              disabled={!canDecide || decide.isPending}
+            >
+              Aprovar
+            </Btn>
+          </>
+        ) : undefined
+      }
+    >
+      <section className="stack-sm">
+        <h3 className="section-title">Dados do produtor</h3>
+        <dl className="dl">
+          <dt>Nome público</dt>
+          <dd>{seller.data.displayName}</dd>
+          <dt>Tipo</dt>
+          <dd>{seller.data.businessType === "company" ? "Empresa" : "Pessoa singular"}</dd>
+          {seller.data.businessName && (
+            <>
+              <dt>Nome legal</dt>
+              <dd>{seller.data.businessName}</dd>
+            </>
+          )}
+          <dt>NUIT</dt>
+          <dd className="mono">{seller.data.nuit || "—"}</dd>
+          <dt>Email de suporte</dt>
+          <dd>{seller.data.supportEmail || "—"}</dd>
+          <dt>WhatsApp</dt>
+          <dd>{seller.data.whatsapp || "—"}</dd>
+        </dl>
+      </section>
+      <section className="stack-sm">
+        <h3 className="section-title">Documentos</h3>
+        {documentError && (
+          <Alert tone="danger" title="Não foi possível abrir o documento" text={documentError} />
+        )}
+        {details.data.documents.length ? (
+          details.data.documents.map((document) => (
+            <div className="offer-row" key={document.id}>
+              <Tile
+                icon="file"
+                tone={viewedDocuments.has(document.id) ? "success" : "neutral"}
+                s="sm"
+              />
+              <div className="grow stack-xs">
+                <b>{documentLabel[document.documentType] ?? document.documentType}</b>
+                <small className="faint">
+                  {document.originalName} ·{" "}
+                  {(document.sizeBytes / 1024 / 1024).toFixed(2).replace(".", ",")} MB
+                </small>
+              </div>
+              <Btn s="sm" icon="eye" onClick={() => openDocument(document.id)}>
+                {viewedDocuments.has(document.id) ? "Abrir novamente" : "Abrir documento"}
+              </Btn>
             </div>
-            {k.riskCategory === "high" ? <Alert tone="danger" icon="shieldalert" title="Atenção à categoria Investimentos" text="Produtos sobre cripto e trading exigem aviso de risco e não podem prometer retornos. Verifique a página de vendas antes de aprovar." /> : null}
-          </Card>
-        </div>
-      </>);
-    }}</Data>
+          ))
+        ) : (
+          <Alert
+            tone="danger"
+            title="Nenhum documento associado"
+            text="Esta verificação não pode ser decidida sem documentos."
+          />
+        )}
+      </section>
+      {verification.status === "in_review" && (
+        <section className="stack-sm">
+          <h3 className="section-title">Decisão</h3>
+          {!allDocumentsViewed && (
+            <Alert
+              tone="warning"
+              title="Reveja todos os documentos"
+              text="Abra cada documento antes de tomar uma decisão."
+            />
+          )}
+          <label className="ad-field">
+            <span className="ad-label">Notas da análise</span>
+            <Textarea
+              value={reviewNotes}
+              onChange={(event) => setReviewNotes(event.target.value)}
+              rows={4}
+              placeholder="Registe o que foi verificado e justifique a decisão."
+            />
+          </label>
+          {decide.isError && (
+            <Alert
+              tone="danger"
+              title="Não foi possível registar a decisão"
+              text={errorText(decide.error)}
+            />
+          )}
+        </section>
+      )}
+      {verification.reviewNotes && (
+        <section className="stack-sm">
+          <h3 className="section-title">Notas registadas</h3>
+          <p>{verification.reviewNotes}</p>
+        </section>
+      )}
+    </Drawer>
   );
 }
 
 export function Moderation() {
-  const { toast } = useApp();
-  const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["admin", "moderation"], queryFn: api.admin.moderation });
-  const decide = useMutation({ mutationFn: ({ id, ok }: { id: string; ok: boolean }) => api.admin.decideModeration(id, ok), onSuccess: (_, v) => { qc.invalidateQueries({ queryKey: ["admin"] }); v.ok ? toast("Produto aprovado e publicado", "O produtor foi notificado") : toast("Produto recusado", "Motivo enviado ao produtor", "neutral", "x"); } });
-  return (<>
-    <PageHead title="Produtos em análise" desc="Revisão antes de os produtos ficarem à venda. SLA: 2 horas." />
-    <Data q={q}>{(items) => <div className="stack-sm">{items.length ? items.map((m) => (
-      <div key={m.id} className="offer-row" style={{ alignItems: "flex-start" }}><Cover cover={m.cover} icon={TYPE_META[m.type][1]} lg />
-        <div className="grow stack-xs" style={{ minWidth: 220 }}><b style={{ fontSize: 15 }}>{m.productName}</b><span className="faint" style={{ fontSize: 13 }}>{m.seller} · {TYPE_META[m.type][0]} · {mt(m.price, 0)}</span>{m.flags.map((f) => <span key={f} className="flag"><Icon name="flag" size={14} />{f}</span>)}</div>
-        <div className="row" style={{ gap: 8 }}><Btn s="sm" v="ghost" icon="ext" onClick={() => toast("Página de vendas aberta", "", "info", "ext")}>Ver página</Btn><Btn s="sm" onClick={() => decide.mutate({ id: m.id, ok: false })}>Recusar</Btn><Btn s="sm" v={m.flags.length ? "secondary" : "primary"} icon="check" onClick={() => decide.mutate({ id: m.id, ok: true })}>Aprovar</Btn></div></div>
-    )) : <Card><p className="muted">Nenhum produto à espera de análise.</p></Card>}</div>}</Data>
-  </>);
-}
-
-export function Transactions() {
-  const { toast } = useApp();
-  const [open, setOpen] = useState<string | null>(null);
-  const q = useQuery({ queryKey: ["admin", "transactions"], queryFn: api.admin.transactions });
-  return (<>
-    <PageHead title="Transações" desc="Todas as cobranças da plataforma, em tempo real." actions={<Btn icon="download" onClick={() => toast("Exportação em preparação", "", "info", "download")}>Exportar</Btn>} />
-    <div className="ad-filterbar"><Input icon="search" wrapClass="ad-search" placeholder="ID, telemóvel, email ou últimos 4 dígitos" aria-label="Procurar transação" /><Select aria-label="Estado" options={["Todos os estados", "Aprovada", "Pendente", "Recusada", "Reembolsada", "Chargeback"]} /><Select aria-label="Método" options={["Todos os métodos", "Apple Pay", "Google Pay", "M-Pesa", "e-Mola", "Cartão"]} /><Select aria-label="Risco" options={["Qualquer risco", "Risco alto (≥ 70)", "Risco médio (40–69)"]} /><span className="ad-filterbar-count">{q.data ? `${int(q.data.total)} hoje` : ""}</span></div>
-    <Data q={q}>{(d) => <Card flush><Table rows={d.items} rowKey={(r) => r.id} onRow={(r) => setOpen(r.id)} total={d.total} per={d.pageSize} cols={[
-      { label: "Transação", render: (s) => <><span className="mono">{s.id}</span><br /><small className="faint">{date(s.createdAt)}</small></> },
-      { label: "Produtor", render: (s) => s.seller },
-      { label: "Comprador", render: (s) => <CellUser name={s.buyer.name} sub={maskPhone(s.buyer.phone)} avatar={false} /> },
-      { label: "Método · rota", render: (s) => <><Method m={s.method} /><br /><small className="faint">{s.route}</small></> },
-      { label: "Valor", num: true, render: (s) => mt(s.amount) },
-      { label: "Taxa", num: true, render: (s) => mt(s.fee) },
-      { label: "Risco", render: (s) => <Risk r={s.risk} /> },
-      { label: "Estado", render: (s) => <Status s={s.status} /> },
-    ]} /></Card>}</Data>
-    {open ? <SaleDrawer id={open} onClose={() => setOpen(null)} /> : null}
-  </>);
-}
-
-const RULE_ICON: Record<string, IconName> = { phone: "phone", card: "card", monitor: "monitor", store: "store", refund: "refund" };
-export function Risk_() {
-  const { toast } = useApp();
-  const [list, setList] = useState<"phone" | "bin" | "email">("phone");
-  const q = useQuery({ queryKey: ["admin", "risk"], queryFn: api.admin.risk });
-  const toggle = useMutation({ mutationFn: ({ id, on }: { id: string; on: boolean }) => api.admin.toggleRule(id, on), onSuccess: (_, v) => toast(v.on ? "Regra ativada" : "Regra desativada", "", v.on ? "success" : "neutral", v.on ? "checkc" : "x") });
-  return (<>
-    <PageHead title="Antifraude" desc="Regras automáticas, listas de bloqueio e transações suspeitas." actions={<Btn v="primary" icon="plus" onClick={() => toast("Editor de regras aberto", "", "info", "sliders")}>Nova regra</Btn>} />
-    <Data q={q}>{(d) => (<>
-      <div className="g4">
-        <Kpi label="Bloqueadas hoje" value={int(d.summary.blockedToday)} icon="ban" tone="danger" hint={`${mt(d.summary.blockedAmount, 0)} evitados`} />
-        <Kpi label="Em revisão manual" value={int(d.summary.manualReview)} icon="eye" tone="warning" />
-        <Kpi label="Falsos positivos · 30 dias" value={pct(d.summary.falsePositiveRate)} icon="target" tone="info" />
-        <Kpi label="Chargebacks evitados" value={int(d.summary.chargebacksAvoided)} icon="shield" tone="success" hint="Estimativa · 30 dias" />
-      </div>
-      <div className="g-main">
-        <Card title="Regras" icon="shieldalert" tone="danger">{d.rules.map((r) => (
-          <div key={r.id} className="setting"><div style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}><Tile icon={RULE_ICON[r.icon] ?? "shield"} tone={r.enabled ? "danger" : "neutral"} s="sm" /><div className="stack-xs"><b>{r.description}</b><small>Ação: {r.action}</small></div></div><Switch defaultChecked={r.enabled} onChange={(v) => toggle.mutate({ id: r.id, on: v })} label={r.description} /></div>
-        ))}</Card>
-        <Card title="Listas de bloqueio" icon="ban">
-          <Tabs kind="segmented" value={list} onChange={setList} items={[["phone", "Números", 214], ["bin", "Cartões (BIN)", 37], ["email", "Emails", 89]]} />
-          <Table dense rows={d.blocklist.filter((b) => b.kind === list)} rowKey={(r) => r.value} cols={[{ label: "Valor", render: (r) => <span className="mono">{r.value}</span> }, { label: "Motivo", render: (r) => r.reason }]} />
-          <Btn s="sm" icon="plus" onClick={() => toast("Adicionado à lista de bloqueio", "", "success", "ban")}>Adicionar à lista</Btn>
-        </Card>
-      </div>
-      <Card title="Transações suspeitas" icon="alert" tone="warning" flush>
-        <Table dense rows={d.flagged} rowKey={(r) => r.id} cols={[
-          { label: "Transação", render: (s) => <span className="mono">{s.id}</span> }, { label: "Produtor", render: (s) => s.seller }, { label: "Método", render: (s) => <Method m={s.method} /> },
-          { label: "Valor", num: true, render: (s) => mt(s.amount) }, { label: "Risco", render: (s) => <Risk r={s.risk} /> },
-          { label: "", num: true, render: () => <div className="row" style={{ gap: 4, justifyContent: "flex-end", flexWrap: "nowrap" }}><Btn s="sm" v="ghost" onClick={() => toast("Transação libertada")}>Libertar</Btn><Btn s="sm" v="danger" onClick={() => toast("Transação bloqueada e reembolsada", "", "danger", "ban")}>Bloquear</Btn></div> },
-        ]} />
+  const client = useQueryClient();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["backoffice", "moderation"],
+    queryFn: () => api.backoffice.moderation(),
+  });
+  if (query.isPending) return <Loading />;
+  if (query.isError) return <ErrorState error={query.error} />;
+  return (
+    <>
+      <PageHead
+        title="Moderação de produtos"
+        desc="Reveja os dados, preço e conteúdo antes de decidir sobre a publicação."
+      />
+      <Card flush>
+        {query.data.items.length ? (
+          <Table
+            rows={query.data.items}
+            rowKey={(item) => item.id}
+            cols={[
+              {
+                label: "Pedido",
+                render: (item) => (
+                  <>
+                    <span className="mono">{item.id}</span>
+                    <br />
+                    <small className="faint">Submetido em {date(item.submittedAt)}</small>
+                  </>
+                ),
+              },
+              {
+                label: "Produto",
+                render: (item) => <span className="mono faint">{item.productId}</span>,
+              },
+              { label: "Estado", render: (item) => <Status s={item.status} /> },
+              {
+                label: "Acção",
+                render: (item) => (
+                  <Btn
+                    s="sm"
+                    v={item.status === "pending" ? "primary" : "secondary"}
+                    onClick={() => setSelectedId(item.id)}
+                  >
+                    {item.status === "pending" ? "Analisar produto" : "Ver detalhes"}
+                  </Btn>
+                ),
+              },
+            ]}
+          />
+        ) : (
+          <Empty icon="package" title="Sem produtos por analisar" />
+        )}
       </Card>
-    </>)}</Data>
-  </>);
+      {selectedId && (
+        <ProductReview
+          id={selectedId}
+          onClose={() => {
+            setSelectedId(null);
+            client.invalidateQueries({ queryKey: ["backoffice", "moderation"] });
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function ProductReview({ id, onClose }: { id: string; onClose: () => void }) {
+  const client = useQueryClient();
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [contentReviewed, setContentReviewed] = useState(false);
+  const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
+  const [fileError, setFileError] = useState<string | null>(null);
+  const details = useQuery({
+    queryKey: ["backoffice", "moderation", id],
+    queryFn: () => api.backoffice.moderationDetails(id),
+  });
+  const productId = details.data?.product.id;
+  const sellerId = details.data?.product.sellerId;
+  const content = useQuery({
+    queryKey: ["backoffice", "product-content", productId],
+    queryFn: () => api.backoffice.productContent(productId!),
+    enabled: !!productId,
+  });
+  const seller = useQuery({
+    queryKey: ["backoffice", "seller", sellerId],
+    queryFn: () => api.backoffice.seller(sellerId!),
+    enabled: !!sellerId,
+  });
+  const decide = useMutation({
+    mutationFn: (action: "approve" | "reject" | "request-changes") =>
+      api.backoffice.decideProduct(id, action, reviewNotes.trim()),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["backoffice", "moderation"] });
+      onClose();
+    },
+  });
+  const openFile = async (fileId: string, lessonId?: string) => {
+    setFileError(null);
+    const tab = window.open("about:blank", "_blank");
+    if (tab) tab.opener = null;
+    try {
+      const access = lessonId
+        ? await api.backoffice.lessonFileAccess(lessonId, fileId)
+        : await api.backoffice.productFileAccess(productId!, fileId);
+      setViewedFiles((current) => new Set(current).add(fileId));
+      if (tab) tab.location.replace(access.url);
+      else window.open(access.url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      tab?.close();
+      setFileError(errorText(error));
+    }
+  };
+  if (details.isError || content.isError || seller.isError)
+    return (
+      <Drawer className="drawer-review" over={id} title="Revisão do produto" onClose={onClose}>
+        <ErrorState error={details.error ?? content.error ?? seller.error} />
+      </Drawer>
+    );
+  if (details.isPending || content.isPending || seller.isPending)
+    return (
+      <Drawer className="drawer-review" over={id} title="Revisão do produto" onClose={onClose}>
+        <Loading />
+      </Drawer>
+    );
+  const request = details.data.request;
+  const product = details.data.product;
+  const defaultOffer = details.data.offers.find((offer) => offer.isDefault);
+  const productFiles = content.data.files ?? [];
+  const lessonFiles = (content.data.modules ?? []).flatMap((module) =>
+    (module.lessons ?? []).flatMap((lesson) => lesson.files ?? []),
+  );
+  const reviewableFiles = [...productFiles, ...lessonFiles].filter(
+    (file) => file.status === "ready",
+  );
+  const allFilesViewed = reviewableFiles.every((file) => viewedFiles.has(file.id));
+  const canDecide = request.status === "pending" && contentReviewed && allFilesViewed;
+  const reviewFoot =
+    request.status === "pending" ? (
+      <div className="review-actions">
+        <Btn
+          onClick={() => decide.mutate("request-changes")}
+          disabled={!canDecide || decide.isPending}
+        >
+          Pedir alterações
+        </Btn>
+        <div>
+          <Btn
+            v="danger"
+            onClick={() => decide.mutate("reject")}
+            disabled={!canDecide || decide.isPending}
+          >
+            Rejeitar
+          </Btn>
+          <Btn
+            v="primary"
+            onClick={() => decide.mutate("approve")}
+            disabled={!canDecide || decide.isPending}
+          >
+            Aprovar
+          </Btn>
+        </div>
+      </div>
+    ) : undefined;
+  return (
+    <Drawer
+      className="drawer-review"
+      over={
+        <span className="mono" title={id}>
+          Pedido {id.slice(0, 8)}…
+        </span>
+      }
+      title={product.name}
+      sub={
+        <div className="row">
+          <Status s={request.status} />
+          <span className="faint">{product.type === "course" ? "Curso" : "Ebook"}</span>
+        </div>
+      }
+      onClose={onClose}
+      foot={reviewFoot}
+    >
+      <section className="review-section">
+        <div className="review-section-head">
+          <div>
+            <h3>Resumo do produto</h3>
+            <p>Informação submetida pelo produtor.</p>
+          </div>
+        </div>
+        <div className="review-facts">
+          <div>
+            <span>Produtor</span>
+            <strong>{seller.data.displayName}</strong>
+          </div>
+          <div>
+            <span>Preço principal</span>
+            <strong>{defaultOffer ? mt(defaultOffer.priceAmount) : "—"}</strong>
+          </div>
+          <div>
+            <span>Garantia</span>
+            <strong>
+              {product.guaranteeDays ? `${product.guaranteeDays} dias` : "Sem garantia"}
+            </strong>
+          </div>
+        </div>
+        <div className="review-description">
+          <span>Descrição</span>
+          <p>{product.description}</p>
+        </div>
+      </section>
+      <section className="review-section">
+        <div className="review-section-head">
+          <div>
+            <h3>Conteúdo</h3>
+            <p>
+              {reviewableFiles.length}{" "}
+              {reviewableFiles.length === 1 ? "ficheiro associado" : "ficheiros associados"}
+            </p>
+          </div>
+          <span className={allFilesViewed ? "is-complete" : ""}>
+            {allFilesViewed
+              ? "Revisto"
+              : `${viewedFiles.size} de ${reviewableFiles.length} revistos`}
+          </span>
+        </div>
+        {fileError && (
+          <Alert tone="danger" title="Não foi possível abrir o ficheiro" text={fileError} />
+        )}
+        {product.type === "ebook" ? (
+          <ProductFiles
+            files={productFiles}
+            viewed={viewedFiles}
+            onOpen={(fileId) => openFile(fileId)}
+          />
+        ) : (
+          <CourseReview
+            modules={content.data.modules ?? []}
+            viewed={viewedFiles}
+            onOpen={(lessonId, fileId) => openFile(fileId, lessonId)}
+          />
+        )}
+      </section>
+      {request.status === "pending" && (
+        <section className="review-section review-decision">
+          <div className="review-section-head">
+            <div>
+              <h3>Decisão</h3>
+              <p>Confirme a revisão antes de escolher uma acção.</p>
+            </div>
+          </div>
+          {!allFilesViewed && (
+            <Alert
+              tone="warning"
+              title="Ainda existem ficheiros por rever"
+              text="Abra cada ficheiro associado antes de tomar uma decisão."
+            />
+          )}
+          <div className="review-confirm">
+            <Checkbox
+              checked={contentReviewed}
+              onChange={setContentReviewed}
+              label="Confirmo que revi os dados, a descrição, o preço e a estrutura do conteúdo."
+            />
+          </div>
+          <label className="ad-field">
+            <span className="ad-label">
+              Notas da revisão <span className="faint">(opcional)</span>
+            </span>
+            <Textarea
+              value={reviewNotes}
+              onChange={(event) => setReviewNotes(event.target.value)}
+              rows={3}
+              placeholder="Adicione contexto apenas quando for necessário."
+            />
+          </label>
+          {decide.isError && (
+            <Alert
+              tone="danger"
+              title="Não foi possível registar a decisão"
+              text={errorText(decide.error)}
+            />
+          )}
+        </section>
+      )}
+      {request.reviewNotes && (
+        <section className="review-section">
+          <div className="review-section-head">
+            <div>
+              <h3>Notas registadas</h3>
+            </div>
+          </div>
+          <p>{request.reviewNotes}</p>
+        </section>
+      )}
+    </Drawer>
+  );
+}
+
+function ProductFiles({
+  files,
+  viewed,
+  onOpen,
+}: {
+  files: Awaited<ReturnType<typeof api.backoffice.productContent>>["files"];
+  viewed: Set<string>;
+  onOpen: (fileId: string) => void;
+}) {
+  if (!files?.length)
+    return (
+      <Alert tone="danger" title="Sem ficheiros" text="O ebook não possui conteúdo associado." />
+    );
+  return (
+    <div className="stack-sm">
+      {files.map((file) => (
+        <div className="offer-row review-file" key={file.id}>
+          <Tile icon="file" tone={viewed.has(file.id) ? "success" : "neutral"} s="sm" />
+          <div className="grow stack-xs">
+            <b>{file.originalName}</b>
+            <small className="faint">
+              {file.mimeType === "application/pdf" ? "Documento PDF" : file.mimeType} ·{" "}
+              {viewed.has(file.id) ? "Revisto" : "Por rever"}
+            </small>
+          </div>
+          <Btn s="sm" icon="eye" disabled={file.status !== "ready"} onClick={() => onOpen(file.id)}>
+            {viewed.has(file.id) ? "Rever ficheiro" : "Abrir ficheiro"}
+          </Btn>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CourseReview({
+  modules,
+  viewed,
+  onOpen,
+}: {
+  modules: NonNullable<Awaited<ReturnType<typeof api.backoffice.productContent>>["modules"]>;
+  viewed: Set<string>;
+  onOpen: (lessonId: string, fileId: string) => void;
+}) {
+  if (!modules.length)
+    return (
+      <Alert tone="danger" title="Sem módulos" text="O curso não possui estrutura associada." />
+    );
+  return (
+    <div className="stack-sm">
+      {modules.map((module) => (
+        <Card key={module.id} title={`${module.position}. ${module.title}`}>
+          {module.lessons?.length ? (
+            <div className="stack-sm">
+              {module.lessons.map((lesson) => (
+                <div className="stack-sm" key={lesson.id}>
+                  <div>
+                    <b>
+                      {lesson.position}. {lesson.title}
+                    </b>
+                    {lesson.description && <p className="muted">{lesson.description}</p>}
+                  </div>
+                  {lesson.files?.map((file) => (
+                    <div className="offer-row" key={file.id}>
+                      <Tile
+                        icon={file.purpose === "video" ? "play" : "file"}
+                        tone={viewed.has(file.id) ? "success" : "neutral"}
+                        s="sm"
+                      />
+                      <div className="grow stack-xs">
+                        <b>{file.originalName}</b>
+                        <small className="faint">
+                          {file.purpose || file.mimeType} · {file.status}
+                        </small>
+                      </div>
+                      <Btn
+                        s="sm"
+                        icon="eye"
+                        disabled={file.status !== "ready"}
+                        onClick={() => onOpen(lesson.id, file.id)}
+                      >
+                        {viewed.has(file.id) ? "Abrir novamente" : "Abrir"}
+                      </Btn>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Alert tone="danger" title="Módulo sem aulas" />
+          )}
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export function Orders() {
+  const [status, setStatus] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
+  const query = useQuery({
+    queryKey: ["backoffice", "orders", status, orderNumber],
+    queryFn: () => api.backoffice.orders(status, orderNumber),
+    placeholderData: (previous) => previous,
+  });
+  if (query.isPending) return <Loading />;
+  if (query.isError) return <ErrorState error={query.error} />;
+  return (
+    <>
+      <PageHead
+        title="Encomendas"
+        desc="Acompanhamento operacional das compras realizadas na plataforma."
+      />
+      <div className="ad-filterbar">
+        <Input
+          icon="search"
+          wrapClass="ad-search"
+          placeholder="Número da encomenda"
+          value={orderNumber}
+          onChange={(event) => setOrderNumber(event.target.value)}
+          aria-label="Procurar encomenda"
+        />
+        <Select
+          aria-label="Estado"
+          value={status}
+          onChange={(event) => setStatus(event.target.value)}
+          options={[
+            ["", "Todos os estados"],
+            ["pending_payment", "Pagamento pendente"],
+            ["paid", "Paga"],
+            ["payment_uncertain", "Pagamento incerto"],
+            ["expired", "Expirada"],
+            ["cancelled", "Cancelada"],
+          ]}
+        />
+        <span className="ad-filterbar-count">
+          {query.data.total} encomenda{query.data.total === 1 ? "" : "s"}
+        </span>
+      </div>
+      <Card flush>
+        {query.data.items.length ? (
+          <OrdersTable rows={query.data.items} />
+        ) : (
+          <Empty
+            icon="receipt"
+            title="Nenhuma encomenda encontrada"
+            desc="Altere os filtros ou aguarde uma nova compra."
+          />
+        )}
+      </Card>
+    </>
+  );
+}
+
+function OrdersTable({
+  rows,
+}: {
+  rows: Awaited<ReturnType<typeof api.backoffice.orders>>["items"];
+}) {
+  return (
+    <Table
+      rows={rows}
+      rowKey={(order) => order.id}
+      cols={[
+        {
+          label: "Encomenda",
+          render: (order) => (
+            <>
+              <span className="mono">{order.orderNumber}</span>
+              <br />
+              <small className="faint">{date(order.createdAt)}</small>
+            </>
+          ),
+        },
+        { label: "Produto", render: (order) => order.items?.[0]?.productName ?? "—" },
+        {
+          label: "Produtor",
+          render: (order) => <span className="mono faint">{order.sellerId.slice(0, 8)}…</span>,
+        },
+        { label: "Tipo", render: (order) => (order.type === "standard" ? "Compra" : order.type) },
+        {
+          label: "Total",
+          num: true,
+          render: (order) => <b style={{ fontWeight: 600 }}>{mt(order.totalAmount)}</b>,
+        },
+        { label: "Estado", render: (order) => <Status s={order.status} /> },
+      ]}
+    />
+  );
 }
 
 export function Payouts() {
-  const { toast } = useApp();
-  const qc = useQueryClient();
-  const [sel, setSel] = useState<Set<string>>(new Set());
-  const q = useQuery({ queryKey: ["admin", "payouts"], queryFn: api.admin.payouts });
-  const decide = useMutation({ mutationFn: (ok: boolean) => api.admin.decidePayouts([...sel], ok), onSuccess: (_, ok) => { const n = sel.size; setSel(new Set()); qc.invalidateQueries({ queryKey: ["admin"] }); ok ? toast(`${n} saques enviados para pagamento`, "Os produtores recebem SMS quando o dinheiro chegar", "success", "cash") : toast(`${n} saques rejeitados`, "Saldo devolvido aos produtores", "neutral", "x"); } });
-  return (<>
-    <PageHead title="Saques" desc="Saques até 100 000 MT são automáticos. Os restantes passam por aqui." />
-    <Data q={q}>{(d) => {
-      const pend = d.items.filter((p) => p.status === "pending");
-      const total = d.items.filter((p) => sel.has(p.id)).reduce((a, p) => a + p.amount, 0);
-      const toggle = (id: string) => { const n = new Set(sel); n.has(id) ? n.delete(id) : n.add(id); setSel(n); };
-      return (<>
-        <div className="g4">
-          <Kpi label="Pagos hoje" value={`${short(d.summary.paidToday)} MT`} icon="checkc" tone="success" hint={`${d.summary.paidCount} saques · ${d.summary.autoShare}% automáticos`} />
-          <Kpi label="À espera de aprovação" value={mt(d.summary.awaiting, 0)} icon="clock" tone="warning" hint={`${d.summary.awaitingCount} saques`} />
-          <Kpi label="Tempo médio M-Pesa" value={`${d.summary.avgMpesaSeconds} s`} icon="zap" tone="info" />
-          <Kpi label="Saldo em conta de liquidação" value={`${short(d.summary.settlement)} MT`} icon="bank" tone="purple" hint="BCI · Millennium bim · M-Pesa B2C" />
-        </div>
-        {sel.size ? <div className="bulkbar"><b>{sel.size} selecionados · {mt(total)}</b><span className="grow" /><Btn s="sm" onClick={() => decide.mutate(false)}>Rejeitar</Btn><Btn s="sm" v="primary" icon="check" loading={decide.isPending} onClick={() => decide.mutate(true)}>Aprovar e pagar</Btn></div> : null}
-        <Card flush><Table rows={d.items} rowKey={(r) => r.id} cols={[
-          { label: <input type="checkbox" aria-label="Selecionar todos" checked={sel.size === pend.length && pend.length > 0} onChange={() => setSel(sel.size === pend.length ? new Set() : new Set(pend.map((p) => p.id)))} />, render: (p) => (p.status === "pending" ? <input type="checkbox" aria-label={`Selecionar ${p.id}`} checked={sel.has(p.id)} onChange={() => toggle(p.id)} /> : null) },
-          { label: "Pedido", render: (p) => <span className="mono">{p.id}</span> },
-          { label: "Produtor", render: (p) => p.seller },
-          { label: "Destino", render: (p) => <Method m={p.destination} /> },
-          { label: "Valor", num: true, render: (p) => <b style={{ fontWeight: 600 }}>{mt(p.amount)}</b> },
-          { label: "Motivo da revisão", render: (p) => <span className={p.reason === "Produtor bloqueado" || p.status === "failed" ? "flag" : "muted"} style={p.status === "failed" ? { color: "var(--danger)" } : undefined}>{p.reason}</span> },
-          { label: "Estado", render: (p) => <Status s={p.status} /> },
-        ]} /></Card>
-      </>);
-    }}</Data>
-  </>);
-}
-
-const DISPUTE_KIND: Record<Dispute["kind"], string> = { chargeback: "Chargeback", late_refund: "Reembolso fora de prazo", complaint: "Reclamação" };
-export function Disputes() {
-  const { toast } = useApp();
-  const [open, setOpen] = useState<Dispute | null>(null);
-  const [note, setNote] = useState("O comprador acedeu ao produto 14 vezes entre 2 e 19 de outubro, a partir do mesmo dispositivo usado na compra. Anexamos o registo de acessos.");
-  const q = useQuery({ queryKey: ["admin", "disputes"], queryFn: api.admin.disputes });
-  const send = useMutation({ mutationFn: () => api.admin.sendEvidence(open!.id, note), onSuccess: () => { setOpen(null); toast("Provas enviadas ao adquirente", "Resposta do banco esperada em até 30 dias.", "info", "send"); } });
-  return (<>
-    <PageHead title="Reembolsos e disputas" desc="Chargebacks dos bancos e reclamações de compradores." />
-    <Data q={q}>{(rows) => (<>
-      <div className="g4">
-        <Kpi label="Abertas" value={rows.filter((r) => r.status === "open").length} icon="scale" tone="warning" />
-        <Kpi label="Taxa de chargeback" value={pct(0.31, 2)} icon="card" tone="danger" hint="Limite: 0,90%" />
-        <Kpi label="Ganhas · 90 dias" value={pct(64, 0)} icon="checkc" tone="success" />
-        <Kpi label="Reembolsos automáticos" value="1 204" icon="refund" tone="info" hint="Dentro da garantia · 30 dias" />
-      </div>
-      <Card flush><Table rows={rows} rowKey={(r) => r.id} cols={[
-        { label: "Disputa", render: (r) => <><span className="mono">{r.id}</span><br /><small className="faint">{DISPUTE_KIND[r.kind]}</small></> },
-        { label: "Transação", render: (r) => <span className="mono">{r.saleId}</span> },
-        { label: "Produtor", render: (r) => r.seller },
-        { label: "Motivo", render: (r) => r.reason },
-        { label: "Valor", num: true, render: (r) => <><Method m={r.method} /><br /><b style={{ fontWeight: 600 }}>{mt(r.amount)}</b></> },
-        { label: "Prazo", render: (r) => (r.deadline ? <span style={r.urgent ? { color: "var(--danger)", fontWeight: 600 } : undefined}>{r.deadline}</span> : "—") },
-        { label: "Estado", render: (r) => <Status s={r.status} /> },
-        { label: "", num: true, render: (r) => (r.status === "open" ? <Btn s="sm" v="primary" onClick={() => setOpen(r)}>Responder</Btn> : null) },
-      ]} /></Card>
-    </>)}</Data>
-    {open ? (
-      <Modal title={`Responder à disputa ${open.id}`} size="lg" desc="As provas são enviadas ao banco emissor através do adquirente." onClose={() => setOpen(null)} foot={<><Btn v="ghost" onClick={() => setOpen(null)}>Aceitar a perda</Btn><Btn v="primary" icon="send" loading={send.isPending} onClick={() => send.mutate()}>Enviar provas</Btn></>}>
-        <div className="g2">
-          <div className="stack-sm"><h4 className="section-title" style={{ fontSize: 14 }}>Provas recolhidas automaticamente</h4><div className="checks">{["Registo de acesso à área de membros (14 sessões)", "IP e dispositivo da compra", "Email de confirmação entregue", "Aceitação dos termos no checkout"].map((t) => <div key={t} className="ok"><Icon name="checkc" size={18} /><span style={{ color: "var(--text)" }}>{t}</span></div>)}</div></div>
-          <Field label="Nota para o banco" htmlFor="dp-n"><Textarea id="dp-n" rows={5} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
-        </div>
-      </Modal>
-    ) : null}
-  </>);
-}
-
-export function Gateways() {
-  const { toast } = useApp();
-  const q = useQuery({ queryKey: ["admin", "gateways"], queryFn: api.admin.gateways });
-  return (<>
-    <PageHead title="Métodos de pagamento" desc="Fornecedores, custos e regras de encaminhamento." />
-    <Data q={q}>{(d) => (<>
-      {d.incident ? <Alert tone="warning" icon="alert" title={d.incident.title} text={d.incident.text} action={<Btn s="sm" onClick={() => toast("Incidente INC-0412 aberto", "", "info", "alert")}>Ver incidente</Btn>} /> : null}
-      <div className="pgrid">{d.gateways.map((g) => (
-        <div key={g.id} className="intg"><div className="row-between"><PayLogo method={g.method} /><Switch defaultChecked={g.enabled} label={g.name} /></div><b>{g.name}</b><p>{g.description}</p>
-          <dl className="dl"><dt>Estado</dt><dd><span className="row" style={{ gap: 6, justifyContent: "flex-end" }}><span className={`status-dot ${g.status === "operational" ? "" : "warn"}`} />{g.status === "operational" ? "Operacional" : "Degradado"}</span></dd><dt>Aprovação 24 h</dt><dd>{pct(g.approval)}</dd><dt>Custo para a plataforma</dt><dd>{g.costPercent ? pct(g.costPercent) : "—"}</dd></dl></div>
-      ))}</div>
-      <Card title="Encaminhamento de cartões, Apple Pay e Google Pay" icon="route"><div className="stack-sm">{d.routing.map((r) => (
-        <div key={r.id} className="offer-row"><b className="grow" style={{ minWidth: 200 }}>{r.condition}</b><div className="route">{r.route.map((p, i) => <Fragment key={p}>{i ? <><Icon name="arrow" size={14} className="faint" /><span className="faint" style={{ fontSize: 12 }}>se falhar</span><Icon name="arrow" size={14} className="faint" /></> : null}<span className="kbd-chip">{p}</span></Fragment>)}</div><IconBtn s="sm" icon="edit" label="Editar regra" onClick={() => toast("Editor de encaminhamento", "", "info", "edit")} /></div>
-      ))}</div></Card>
-    </>)}</Data>
-  </>);
-}
-
-export function Fees() {
-  const { toast } = useApp();
-  const q = useQuery({ queryKey: ["admin", "fees"], queryFn: api.admin.fees });
-  return (<>
-    <PageHead title="Taxas e planos" desc="O que cada produtor paga por venda e quando recebe." actions={<Btn v="primary" onClick={() => toast("Tabela de taxas publicada", "Aplica-se a novas vendas.")}>Guardar alterações</Btn>} />
-    <Data q={q}>{(d) => (<>
-      <div className="g3">{d.plans.map((p) => (
-        <div key={p.id} className={`plan ${p.isDefault ? "on" : ""}`}><div className="row-between"><b style={{ fontSize: 16 }}>{p.name}</b>{p.isDefault ? <Badge tone="primary">Predefinido</Badge> : null}</div>
-          <span className="plan-fee">{p.percent != null ? pct(p.percent) : "Negociado"} {p.percent != null ? <small>+ {p.fixed} MT</small> : null}</span><span className="faint" style={{ fontSize: 13 }}>{int(p.sellers)} produtores</span>
-          <ul>{p.perks.map((x) => <li key={x}><Icon name="check" size={14} />{x}</li>)}</ul></div>
-      ))}</div>
-      <div className="g2">
-        <Card title="Prazos de libertação" icon="calendar" flush><Table dense rows={d.release} rowKey={(r) => r.method} cols={[
-          { label: "Método", render: (r) => <Method m={r.method} /> },
-          { label: "Libertação", render: (r) => <div className="ad-input ad-input-sm inline-input"><span className="faint" style={{ fontSize: 13 }}>D+</span><input defaultValue={r.days} aria-label={`Dias para ${METHODS[r.method].label}`} /></div> },
-          { label: "Reserva", render: (r) => <div className="ad-input ad-input-sm inline-input"><input defaultValue={r.reservePercent} aria-label={`Reserva para ${METHODS[r.method].label}`} /><span className="faint" style={{ fontSize: 13 }}>%</span></div> },
-        ]} /></Card>
-        <Card title="Saques" icon="cash"><dl className="dl">{d.payouts.map((p) => <Fragment key={p.label}><dt>{p.label}</dt><dd>{p.value}</dd></Fragment>)}</dl></Card>
-      </div>
-    </>)}</Data>
-  </>);
-}
-
-export function Team() {
-  const { toast } = useApp();
-  const q = useQuery({ queryKey: ["admin", "team"], queryFn: api.admin.team });
-  return (<>
-    <PageHead title="Equipa e acessos" desc="Quem trabalha no backoffice e o que pode fazer." actions={<Btn v="primary" icon="plus" onClick={() => toast("Convite enviado", "", "success", "send")}>Convidar membro</Btn>} />
-    <Data q={q}>{(d) => {
-      const perms = Object.keys(d.roles[0]?.permissions ?? {});
-      return (<>
-        <Card flush><Table rows={d.members} rowKey={(r) => r.id} cols={[
-          { label: "Membro", render: (r) => <CellUser name={r.name} sub={r.email} /> },
-          { label: "Função", render: (r) => <Badge tone={r.role === "Administrador" ? "primary" : "neutral"}>{r.role}</Badge> },
-          { label: "2 passos", render: (r) => (r.twoFactor ? <span style={{ color: "var(--success)" }}><Icon name="checkc" size={16} /></span> : <Badge tone="danger">Desativado</Badge>) },
-          { label: "Último acesso", render: (r) => r.lastSeen },
-        ]} /></Card>
-        <Card title="Permissões por função" icon="lock" flush><Table dense className="perm-table" rows={d.roles} rowKey={(r) => r.role} cols={[
-          { label: "Função", render: (r) => <b style={{ fontWeight: 600 }}>{r.role}</b> },
-          ...perms.map((p) => ({ label: p, render: (r: (typeof d.roles)[number]) => <input type="checkbox" defaultChecked={r.permissions[p]} disabled={r.role === "Administrador"} aria-label={`${p} para ${r.role}`} /> })),
-        ]} /></Card>
-      </>);
-    }}</Data>
-  </>);
-}
-
-export function Audit() {
-  const { toast } = useApp();
-  const q = useQuery({ queryKey: ["admin", "audit"], queryFn: api.admin.auditLogs });
-  return (<>
-    <PageHead title="Registo de auditoria" desc="Todas as ações da equipa ficam registadas e não podem ser apagadas." actions={<Btn icon="download" onClick={() => toast("Registo exportado")}>Exportar</Btn>} />
-    <div className="ad-filterbar"><Input icon="search" wrapClass="ad-search" placeholder="Procurar por pessoa, ação ou ID" aria-label="Procurar no registo" /><Select aria-label="Ação" options={["Todas as ações", "KYC", "Saques", "Taxas", "Reembolsos", "Acessos"]} /><Select aria-label="Período" options={["Últimas 24 horas", "Últimos 7 dias", "Últimos 30 dias"]} /></div>
-    <Data q={q}>{(d) => <Card flush><Table dense rows={d.items} rowKey={(r) => r.id} total={d.total} per={d.pageSize} cols={[
-      { label: "Quando", render: (r) => <span className="mono">{r.at}</span> },
-      { label: "Quem", render: (r) => <CellUser name={r.actor} sub={r.actorRole} /> },
-      { label: "Ação", render: (r) => r.action },
-      { label: "Objeto", render: (r) => <span className="mono">{r.target}</span> },
-      { label: "IP", render: (r) => <span className="mono faint">{r.ip}</span> },
-    ]} /></Card>}</Data>
-  </>);
+  const client = useQueryClient();
+  const { prompt } = useApp();
+  const query = useQuery({
+    queryKey: ["backoffice", "payouts"],
+    queryFn: () => api.backoffice.payouts(),
+  });
+  const decide = useMutation({
+    mutationFn: ({
+      id,
+      action,
+      reviewNotes,
+    }: {
+      id: string;
+      action: "approve" | "reject";
+      reviewNotes: string;
+    }) => api.backoffice.decidePayout(id, action, reviewNotes),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["backoffice", "payouts"] }),
+  });
+  const decidePayout = async (id: string, action: "approve" | "reject") => {
+    const reviewNotes = await prompt({
+      title: action === "approve" ? "Aprovar saque" : "Rejeitar saque",
+      message:
+        "Confirme os dados do pedido antes de continuar. A decisão fica registada para auditoria.",
+      label: "Notas da decisão",
+      placeholder: "Registe o que foi verificado e justifique a decisão.",
+      confirmLabel: action === "approve" ? "Aprovar" : "Rejeitar",
+    });
+    if (reviewNotes !== null) decide.mutate({ id, action, reviewNotes });
+  };
+  if (query.isPending) return <Loading />;
+  if (query.isError) return <ErrorState error={query.error} />;
+  return (
+    <>
+      <PageHead
+        title="Saques"
+        desc="Decisões individuais. Não existe aprovação em lote para operações financeiras."
+      />
+      {decide.isError && (
+        <Alert
+          tone="danger"
+          title="Não foi possível decidir o saque"
+          text={errorText(decide.error)}
+        />
+      )}
+      <Card flush>
+        {query.data.items.length ? (
+          <Table
+            rows={query.data.items}
+            rowKey={(payout) => payout.id}
+            cols={[
+              { label: "Destino", render: (payout) => payout.destinationName },
+              { label: "Valor", render: (payout) => mt(payout.amount) },
+              { label: "Estado", render: (payout) => <Status s={payout.status} /> },
+              {
+                label: "Acções",
+                render: (payout) =>
+                  payout.status === "pending_approval" ? (
+                    <div className="row">
+                      <Btn s="sm" onClick={() => decidePayout(payout.id, "approve")}>
+                        Aprovar
+                      </Btn>
+                      <Btn s="sm" v="danger" onClick={() => decidePayout(payout.id, "reject")}>
+                        Rejeitar
+                      </Btn>
+                    </div>
+                  ) : null,
+              },
+            ]}
+          />
+        ) : (
+          <Empty icon="cash" title="Sem pedidos de saque" />
+        )}
+      </Card>
+    </>
+  );
 }

@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import { copyFileSync, existsSync } from "node:fs";
@@ -13,18 +13,45 @@ const spaFallback = () => ({
   apply: "build" as const,
   closeBundle() {
     const out = resolve(fileURLToPath(new URL(".", import.meta.url)), "dist");
-    if (existsSync(resolve(out, "index.html"))) copyFileSync(resolve(out, "index.html"), resolve(out, "404.html"));
+    if (existsSync(resolve(out, "index.html")))
+      copyFileSync(resolve(out, "index.html"), resolve(out, "404.html"));
   },
 });
 
-export default defineConfig({
-  base,
-  plugins: [react(), spaFallback()],
-  resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
-  css: {
-    transformer: "lightningcss",
-    lightningcss: { targets: { safari: (15 << 16) | (4 << 8), chrome: 100 << 16, firefox: 100 << 16 } },
-  },
-  build: { cssMinify: "lightningcss", target: "es2020", sourcemap: true },
-  server: { port: 5173 },
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  const apiProxyTarget = env.API_PROXY_TARGET || "http://localhost:8080";
+
+  return {
+    base,
+    plugins: [react(), spaFallback()],
+    resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
+    css: {
+      transformer: "lightningcss",
+      lightningcss: {
+        targets: { safari: (15 << 16) | (4 << 8), chrome: 100 << 16, firefox: 100 << 16 },
+      },
+    },
+    build: { cssMinify: "lightningcss", target: "es2020", sourcemap: true },
+    server: {
+      port: 5173,
+      proxy: {
+        "/api": {
+          target: apiProxyTarget,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ""),
+          configure(proxy) {
+            proxy.on("proxyRes", (proxyResponse) => {
+              const cookies = proxyResponse.headers["set-cookie"];
+              if (!cookies) return;
+
+              proxyResponse.headers["set-cookie"] = cookies.map((cookie) =>
+                cookie.replace(/Path=\/v1\//i, "Path=/api/v1/"),
+              );
+            });
+          },
+        },
+      },
+    },
+  };
 });
