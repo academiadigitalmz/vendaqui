@@ -12,12 +12,13 @@ npm run dev
 
 Requer Node.js 20.19 ou superior (ou 22.12+ nas séries mais recentes).
 
-| Comando             | Finalidade                                |
-| ------------------- | ----------------------------------------- |
-| `npm run dev`       | Servidor local em `http://localhost:5173` |
-| `npm run typecheck` | Validação TypeScript sem gerar ficheiros  |
-| `npm run build`     | Typecheck e build de produção             |
-| `npm run preview`   | Servir localmente o resultado do build    |
+| Comando                 | Finalidade                                 |
+| ----------------------- | ------------------------------------------ |
+| `npm run dev`           | Servidor local em `http://localhost:5173`  |
+| `npm run typecheck`     | Validação TypeScript sem gerar ficheiros   |
+| `npm run build`         | Typecheck e build de produção              |
+| `npm run preview`       | Servir localmente o resultado do build     |
+| `npm run test:checkout` | Testes do checkout no browser (após build) |
 
 ## Configuração
 

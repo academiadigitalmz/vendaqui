@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/api/endpoints";
-import type { Purchase as PurchaseResult, WalletMethod } from "@/api/checkout";
+import type { CheckoutOrder, Purchase as PurchaseResult, WalletMethod } from "@/api/checkout";
 import { HttpError } from "@/api/http";
 import {
+  canStartOver,
   clearDraft,
   paymentState,
   normalizePhone,
   readDraft,
+  releaseDraft,
   saveDraft,
   type CheckoutDraft,
 } from "@/lib/checkout-state";
@@ -24,6 +26,9 @@ const errorMessage = (e: unknown) =>
 const label = (method: string) => (method === "mpesa" ? "M-Pesa" : "e-Mola");
 const CHECKOUT_METHOD: WalletMethod = "mpesa";
 const checkoutToken = (draft?: CheckoutDraft | null) => draft?.token ?? draft?.key;
+// The server refused the request itself, so the buyer may correct it and send a new one.
+const isRejected = (e: unknown) => e instanceof HttpError && [400, 422].includes(e.status);
+const isOverdue = (order: CheckoutOrder) => new Date(order.expiresAt).getTime() <= Date.now();
 
 export default function Purchase() {
   const { slug = "" } = useParams();
@@ -81,7 +86,7 @@ function PurchaseForm({ slug }: { slug: string }) {
         persist({ ...d, orderId: result.order.id, token: result.checkoutToken });
         return result;
       } catch (error) {
-        if (error instanceof HttpError && [400, 422].includes(error.status)) {
+        if (isRejected(error)) {
           clearDraft(slug, d);
           setDraft(null);
         }
@@ -97,13 +102,17 @@ function PurchaseForm({ slug }: { slug: string }) {
       q.state.error ||
       (q.state.data && ["paid", "closed", "retry"].includes(paymentState(q.state.data)))
         ? false
-        : 2000,
+        : q.state.data && isOverdue(q.state.data.order)
+          ? 15000
+          : 2000,
     retry: false,
   });
   useEffect(() => {
-    if (status.data && paymentState(status.data) === "paid")
+    if (status.data && paymentState(status.data) === "paid") {
+      releaseDraft(slug);
       nav(`/obrigado/${status.data.order.id}`, { replace: true });
-  }, [status.data, nav]);
+    }
+  }, [status.data, nav, slug]);
   const retry = useMutation({
     mutationFn: async () => {
       if (!draft?.orderId || !status.data || paymentState(status.data) !== "retry")
@@ -115,17 +124,28 @@ function PurchaseForm({ slug }: { slug: string }) {
         input: { method: CHECKOUT_METHOD, msisdn },
       };
       persist({ ...draft, retry: operation });
-      const result = await api.checkout.retry(
-        draft.orderId,
-        operation.input,
-        operation.key,
-        checkoutToken(draft),
-      );
-      persist({ ...draft, retry: undefined });
-      await status.refetch();
-      return result;
+      try {
+        const result = await api.checkout.retry(
+          draft.orderId,
+          operation.input,
+          operation.key,
+          checkoutToken(draft),
+        );
+        persist({ ...draft, retry: undefined });
+        await status.refetch();
+        return result;
+      } catch (error) {
+        if (isRejected(error)) persist({ ...draft, retry: undefined });
+        throw error;
+      }
     },
   });
+  const startOver = () => {
+    clearDraft(slug, draft);
+    setDraft(null);
+    create.reset();
+    retry.reset();
+  };
   if (product.isPending || methods.isPending) return <Loading />;
   if (product.isError || methods.isError)
     return (
@@ -241,7 +261,7 @@ function PurchaseForm({ slug }: { slug: string }) {
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="84 123 4567"
                   required
-                  disabled={locked && !draft?.orderId}
+                  disabled={locked && (!draft?.orderId || !!draft.retry)}
                   autoComplete="tel"
                   inputMode="tel"
                 />
@@ -300,6 +320,11 @@ function PurchaseForm({ slug }: { slug: string }) {
                 {status.data && paymentState(status.data) === "retry" && (
                   <Btn v="primary" loading={retry.isPending} onClick={() => retry.mutate()}>
                     Tentar pagamento novamente
+                  </Btn>
+                )}
+                {status.data && canStartOver(status.data) && (
+                  <Btn v="primary" onClick={startOver}>
+                    Fazer nova encomenda
                   </Btn>
                 )}
                 {retry.isError && (
@@ -361,19 +386,39 @@ function PurchaseForm({ slug }: { slug: string }) {
 }
 function PaymentStatus({ purchase }: { purchase: PurchaseResult }) {
   const state = paymentState(purchase);
-  if (state === "waiting")
-    return (
-      <div className="co-payment-wait" role="status" aria-label="A processar pagamento">
-        <span className="ad-spinner" />
-      </div>
-    );
+  if (state === "waiting") return <PaymentWait order={purchase.order} />;
   if (state === "paid") return null;
   const text =
     state === "retry"
       ? "A cobrança foi recusada. Pode tentar novamente."
-      : "Esta encomenda já não aceita pagamentos.";
+      : canStartOver(purchase)
+        ? "Esta encomenda já não aceita pagamentos."
+        : `Não pague de novo. Contacte o apoio e indique a encomenda ${purchase.order.orderNumber}.`;
   return (
     <Alert title={state === "retry" ? "Pagamento recusado" : "Encomenda encerrada"} text={text} />
+  );
+}
+function PaymentWait({ order }: { order: CheckoutOrder }) {
+  const [, setExpired] = useState(false);
+  useEffect(() => {
+    const remaining = new Date(order.expiresAt).getTime() - Date.now();
+    if (!(remaining > 0)) return;
+    // Identical poll results do not re-render, so the deadline needs its own timer.
+    const timer = setTimeout(() => setExpired(true), Math.min(remaining, 2 ** 31 - 1));
+    return () => clearTimeout(timer);
+  }, [order.expiresAt]);
+  const overdue = isOverdue(order);
+  return (
+    <div className="co-payment-wait" role="status">
+      <span className="ad-spinner" />
+      <strong>{overdue ? "Ainda sem confirmação" : "A confirmar o pagamento"}</strong>
+      <p>
+        {overdue
+          ? "Não pague de novo. Contacte o apoio e indique esta encomenda."
+          : "Se receber o pedido no telemóvel, introduza o PIN. Não repita o pagamento."}
+      </p>
+      <small>Encomenda {order.orderNumber}</small>
+    </div>
   );
 }
 
@@ -392,7 +437,8 @@ export function ThankYou() {
     refetchInterval: (query) => {
       if (query.state.error) return false;
       const result = query.state.data;
-      if (!result || paymentState(result) === "waiting") return 2000;
+      if (!result) return 2000;
+      if (paymentState(result) === "waiting") return isOverdue(result.order) ? 15000 : 2000;
       if (["closed", "retry"].includes(paymentState(result))) return false;
       return result.claimStatus === "pending_payment" ||
         (result.claimStatus === "pending_identity" && result.claimMode === "existing_account")
@@ -440,12 +486,12 @@ export function ThankYou() {
   const p = q.data;
   const state = paymentState(p);
   const paid = state === "paid";
+  const linking = p.claimStatus === "pending_identity" && p.claimMode === "existing_account";
+  const hasAccess = !p.claimStatus || p.claimStatus === "claimed" || (linking && claim.isSuccess);
   if (state === "waiting")
     return (
       <main className="co-wrap" style={{ paddingBlock: 32 }}>
-        <div className="co-payment-wait" role="status" aria-label="A processar pagamento">
-          <span className="ad-spinner" />
-        </div>
+        <PaymentWait order={p.order} />
       </main>
     );
   if (!paid)
@@ -618,6 +664,31 @@ export function ThankYou() {
           )}
         </section>
       )}
+      {linking && claim.isError && (
+        <Alert
+          tone="danger"
+          title="Não foi possível associar a compra à sua conta"
+          text={errorMessage(claim.error)}
+          action={
+            <>
+              <Btn s="sm" onClick={() => claim.mutate()}>
+                Tentar novamente
+              </Btn>
+              {!session && (
+                <Btn s="sm" to={`/entrar?next=${encodeURIComponent(`/obrigado/${orderId}`)}`}>
+                  Iniciar sessão
+                </Btn>
+              )}
+            </>
+          }
+        />
+      )}
+      {linking && !claim.isError && !claim.isSuccess && (
+        <div className="co-payment-wait" role="status">
+          <span className="ad-spinner" />
+          <p>A associar a compra à sua conta…</p>
+        </div>
+      )}
       {p.claimStatus === "manual_review" && (
         <Alert
           tone="danger"
@@ -630,7 +701,7 @@ export function ThankYou() {
           <span className="ad-spinner" />
         </div>
       )}
-      {(!p.claimStatus || p.claimStatus === "claimed" || p.claimMode === "existing_account") && (
+      {hasAccess && (
         <div className="purchase-access">
           {p.order.items?.map((i) => (
             <div className="purchase-access-item" key={i.productId}>
