@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/api/endpoints";
+import { api, type PayoutRequest } from "@/api/endpoints";
 import { HttpError } from "@/api/http";
 import { date, mt } from "@/lib/format";
 import { useApp } from "@/lib/app-state";
@@ -1017,6 +1017,11 @@ function OrdersTable({
   );
 }
 
+const payoutDestination = (payout: PayoutRequest) => {
+  const wallet = { mpesa: "M-Pesa", emola: "e-Mola" }[payout.provider] ?? payout.provider;
+  return `${wallet} · ${payout.destinationReference || "referência não disponível"}`;
+};
+
 export function Payouts() {
   const client = useQueryClient();
   const { prompt } = useApp();
@@ -1036,16 +1041,15 @@ export function Payouts() {
     }) => api.backoffice.decidePayout(id, action, reviewNotes),
     onSuccess: () => client.invalidateQueries({ queryKey: ["backoffice", "payouts"] }),
   });
-  const decidePayout = async (id: string, action: "approve" | "reject") => {
+  const decidePayout = async (payout: PayoutRequest, action: "approve" | "reject") => {
     const reviewNotes = await prompt({
       title: action === "approve" ? "Aprovar saque" : "Rejeitar saque",
-      message:
-        "Confirme os dados do pedido antes de continuar. A decisão fica registada para auditoria.",
+      message: `${mt(payout.amount)} para ${payout.destinationName} (${payoutDestination(payout)}). Confirme estes dados antes de continuar. A decisão fica registada para auditoria.`,
       label: "Notas da decisão",
       placeholder: "Registe o que foi verificado e justifique a decisão.",
       confirmLabel: action === "approve" ? "Aprovar" : "Rejeitar",
     });
-    if (reviewNotes !== null) decide.mutate({ id, action, reviewNotes });
+    if (reviewNotes !== null) decide.mutate({ id: payout.id, action, reviewNotes });
   };
   if (query.isPending) return <Loading />;
   if (query.isError) return <ErrorState error={query.error} />;
@@ -1068,7 +1072,17 @@ export function Payouts() {
             rows={query.data.items}
             rowKey={(payout) => payout.id}
             cols={[
-              { label: "Destino", render: (payout) => payout.destinationName },
+              {
+                label: "Destino",
+                render: (payout) => (
+                  <div>
+                    <strong>{payout.destinationName}</strong>
+                    <br />
+                    <small>{payoutDestination(payout)}</small>
+                  </div>
+                ),
+              },
+              { label: "Pedido em", render: (payout) => date(payout.requestedAt) },
               { label: "Valor", render: (payout) => mt(payout.amount) },
               { label: "Estado", render: (payout) => <Status s={payout.status} /> },
               {
@@ -1076,10 +1090,19 @@ export function Payouts() {
                 render: (payout) =>
                   payout.status === "pending_approval" ? (
                     <div className="row">
-                      <Btn s="sm" onClick={() => decidePayout(payout.id, "approve")}>
+                      <Btn
+                        s="sm"
+                        disabled={decide.isPending}
+                        onClick={() => decidePayout(payout, "approve")}
+                      >
                         Aprovar
                       </Btn>
-                      <Btn s="sm" v="danger" onClick={() => decidePayout(payout.id, "reject")}>
+                      <Btn
+                        s="sm"
+                        v="danger"
+                        disabled={decide.isPending}
+                        onClick={() => decidePayout(payout, "reject")}
+                      >
                         Rejeitar
                       </Btn>
                     </div>

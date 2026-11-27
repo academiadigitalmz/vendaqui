@@ -11,7 +11,8 @@
     "skins": "node scripts/skins.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:checkout": "node scripts/check-checkout.mjs"
+    "test:checkout": "node scripts/check-checkout.mjs",
+    "test:account": "node scripts/check-account.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.59.20",

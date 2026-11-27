@@ -92,21 +92,24 @@ const fileSize = (value?: number | null) => {
   return `${(value / (1024 * 1024)).toLocaleString("pt-MZ", { maximumFractionDigits: 1 })} MB`;
 };
 const verificationStatus = (value: { status?: string }) => value.status ?? "draft";
-const payoutStorageKey = "vq.payout.operation";
+// Scoped by owner: another producer in this tab must not see or resend it, and the owner can resume it.
+const payoutStorageKey = (ownerId: string) => `vq.payout.operation.${ownerId}`;
+// These refusals do not say whether the payout exists, so its key must be kept and resent.
+const UNCERTAIN_PAYOUT_STATUSES = [401, 408, 409, 425, 429];
 type PayoutOperation = {
   key: string;
   body: { payoutAccountId: string; amount: number; type: string };
 };
-const readPayoutOperation = (): PayoutOperation | null => {
+const readPayoutOperation = (ownerId: string): PayoutOperation | null => {
   try {
-    return JSON.parse(sessionStorage.getItem(payoutStorageKey) || "null");
+    return JSON.parse(sessionStorage.getItem(payoutStorageKey(ownerId)) || "null");
   } catch {
     return null;
   }
 };
-const storePayoutOperation = (operation: PayoutOperation | null) => {
-  if (operation) sessionStorage.setItem(payoutStorageKey, JSON.stringify(operation));
-  else sessionStorage.removeItem(payoutStorageKey);
+const storePayoutOperation = (ownerId: string, operation: PayoutOperation | null) => {
+  if (operation) sessionStorage.setItem(payoutStorageKey(ownerId), JSON.stringify(operation));
+  else sessionStorage.removeItem(payoutStorageKey(ownerId));
 };
 
 export function SellerSetup() {
@@ -1724,6 +1727,7 @@ function SellerOrderDrawer({ id, onClose }: { id: string; onClose: () => void })
 
 export function SellerFinance() {
   const client = useQueryClient();
+  const ownerId = useApp().session?.user.id ?? "";
   const balance = useQuery({ queryKey: ["seller", "balance"], queryFn: api.seller.balance });
   const accounts = useQuery({
     queryKey: ["seller", "payout-accounts"],
@@ -1736,13 +1740,15 @@ export function SellerFinance() {
     accountReference: "",
   });
   const [accountModalOpen, setAccountModalOpen] = useState(false);
-  const [payoutModalOpen, setPayoutModalOpen] = useState(() => !!readPayoutOperation());
-  const [amount, setAmount] = useState(() => readPayoutOperation()?.body.amount.toString() ?? "");
-  const [accountId, setAccountId] = useState(
-    () => readPayoutOperation()?.body.payoutAccountId ?? "",
+  const [payoutModalOpen, setPayoutModalOpen] = useState(() => !!readPayoutOperation(ownerId));
+  const [amount, setAmount] = useState(
+    () => readPayoutOperation(ownerId)?.body.amount.toString() ?? "",
   );
-  const [payoutOperation, setPayoutOperation] = useState<PayoutOperation | null>(
-    readPayoutOperation,
+  const [accountId, setAccountId] = useState(
+    () => readPayoutOperation(ownerId)?.body.payoutAccountId ?? "",
+  );
+  const [payoutOperation, setPayoutOperation] = useState<PayoutOperation | null>(() =>
+    readPayoutOperation(ownerId),
   );
   const addAccount = useMutation({
     mutationFn: () => api.seller.addPayoutAccount({ type: "mobile_money", ...account }),
@@ -1758,16 +1764,21 @@ export function SellerFinance() {
       api.seller.requestPayout(operation.body, operation.key),
     onSuccess: () => {
       setPayoutOperation(null);
-      storePayoutOperation(null);
+      storePayoutOperation(ownerId, null);
       setAmount("");
       setPayoutModalOpen(false);
       client.invalidateQueries({ queryKey: ["seller", "balance"] });
       client.invalidateQueries({ queryKey: ["seller", "payouts"] });
     },
     onError: (error) => {
-      if (error instanceof HttpError && error.status >= 400 && error.status < 500) {
+      if (
+        error instanceof HttpError &&
+        error.status >= 400 &&
+        error.status < 500 &&
+        !UNCERTAIN_PAYOUT_STATUSES.includes(error.status)
+      ) {
         setPayoutOperation(null);
-        storePayoutOperation(null);
+        storePayoutOperation(ownerId, null);
       }
     },
   });
@@ -1777,8 +1788,8 @@ export function SellerFinance() {
       return;
 
     setPayoutOperation(null);
-    storePayoutOperation(null);
-  }, [balance.data, payoutOperation]);
+    storePayoutOperation(ownerId, null);
+  }, [balance.data, payoutOperation, ownerId]);
   const requestedAmount = Number(amount);
   const amountInvalid =
     !Number.isFinite(requestedAmount) ||
@@ -1792,7 +1803,7 @@ export function SellerFinance() {
       body: { payoutAccountId: accountId, amount: Number(amount), type: "standard" },
     };
     setPayoutOperation(operation);
-    storePayoutOperation(operation);
+    storePayoutOperation(ownerId, operation);
     requestPayout.mutate(operation);
   };
   if (balance.isPending || accounts.isPending || payouts.isPending) return <Loading />;
@@ -1810,7 +1821,7 @@ export function SellerFinance() {
             disabled={!activeAccounts.length}
             onClick={() => setPayoutModalOpen(true)}
           >
-            Solicitar saque
+            {payoutOperation ? "Retomar saque" : "Solicitar saque"}
           </Btn>
         }
       />
@@ -1964,14 +1975,12 @@ export function SellerFinance() {
         <Modal
           title={payoutOperation ? "Retomar pedido de saque" : "Solicitar saque"}
           desc={`Disponível: ${mt(balance.data.available)}`}
-          onClose={() => {
-            if (!payoutOperation) setPayoutModalOpen(false);
-          }}
-          noClose={!!payoutOperation}
+          // Closing keeps the pending operation; reopening resumes it with the same key.
+          onClose={() => setPayoutModalOpen(false)}
           foot={
             <>
-              <Btn onClick={() => setPayoutModalOpen(false)} disabled={!!payoutOperation}>
-                Cancelar
+              <Btn onClick={() => setPayoutModalOpen(false)}>
+                {payoutOperation ? "Fechar" : "Cancelar"}
               </Btn>
               <Btn
                 v="primary"

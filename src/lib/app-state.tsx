@@ -9,7 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { tokenStore } from "@/api/http";
+import { useQueryClient } from "@tanstack/react-query";
+import { HttpError, tokenStore } from "@/api/http";
 import { api } from "@/api/endpoints";
 import type { Session } from "@/api/types";
 import { Icon, type IconName } from "./icons";
@@ -91,7 +92,8 @@ interface Ctx {
   session: Session | null;
   authReady: boolean;
   signIn: (s: Session) => void;
-  signOut: () => Promise<void>;
+  /** Resolves false when the server session could not be ended and stays open. */
+  signOut: () => Promise<boolean>;
 }
 const AppCtx = createContext<Ctx | null>(null);
 export const useApp = () => {
@@ -113,6 +115,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const seq = useRef(0);
+  const queryClient = useQueryClient();
+  const userId = useRef<string | null>(null);
 
   useEffect(() => {
     const mq = matchMedia("(prefers-color-scheme: dark)");
@@ -135,7 +139,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       : api.auth.restore;
     restore()
       .then((restored) => {
-        if (active) setSession(restored);
+        if (!active) return;
+        userId.current = restored?.user.id ?? null;
+        setSession(restored);
       })
       .catch(() => {
         tokenStore.set(null);
@@ -201,20 +207,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }),
     [],
   );
-  const signIn = useCallback((s: Session) => {
-    tokenStore.set(s.token, s.user.role === "admin" ? "backoffice" : "app");
-    setSession(s);
-    setAuthReady(true);
-  }, []);
+  const signIn = useCallback(
+    (s: Session) => {
+      // Cached responses are not keyed by user, so they must not outlive the one who fetched them.
+      if (userId.current && userId.current !== s.user.id) queryClient.clear();
+      userId.current = s.user.id;
+      tokenStore.set(s.token, s.user.role === "admin" ? "backoffice" : "app");
+      setSession(s);
+      setAuthReady(true);
+    },
+    [queryClient],
+  );
   const signOut = useCallback(async () => {
     const logout = session?.user.role === "admin" ? api.backofficeAuth.logout : api.auth.logout;
     try {
       await logout();
-    } finally {
-      tokenStore.set(null);
-      setSession(null);
+    } catch (error) {
+      // 401 means the server has no session left to end.
+      if (!(error instanceof HttpError && error.status === 401)) {
+        toast(
+          "Não foi possível terminar a sessão",
+          "A sessão continua aberta. Verifique a ligação e tente novamente.",
+          "danger",
+          "alert",
+        );
+        return false;
+      }
     }
-  }, [session?.user.role]);
+    tokenStore.set(null);
+    setSession(null);
+    userId.current = null;
+    queryClient.clear();
+    return true;
+  }, [session?.user.role, toast, queryClient]);
 
   const value = useMemo(
     () => ({

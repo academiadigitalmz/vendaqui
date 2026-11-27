@@ -382,11 +382,9 @@ export const api = {
     restore: restorePublicSession,
     me: () => get<ApiUser>("/me"),
     logout: async () => {
-      try {
-        await post<void>("/auth/logout");
-      } finally {
-        tokenStore.set(null, "app");
-      }
+      // The token stays when this fails, so the still-open session keeps working.
+      await post<void>("/auth/logout");
+      tokenStore.set(null, "app");
     },
   },
 
@@ -410,11 +408,9 @@ export const api = {
     },
     restore: restoreBackofficeSession,
     logout: async () => {
-      try {
-        await post<void>("/backoffice/auth/logout");
-      } finally {
-        tokenStore.set(null, "backoffice");
-      }
+      // The token stays when this fails, so the still-open session keeps working.
+      await post<void>("/backoffice/auth/logout");
+      tokenStore.set(null, "backoffice");
     },
   },
 

@@ -19,6 +19,7 @@ Requer Node.js 20.19 ou superior (ou 22.12+ nas séries mais recentes).
 | `npm run build`         | Typecheck e build de produção              |
 | `npm run preview`       | Servir localmente o resultado do build     |
 | `npm run test:checkout` | Testes do checkout no browser (após build) |
+| `npm run test:account`  | Testes de sessão e saques (após build)     |
 
 ## Configuração
 
@@ -64,5 +65,7 @@ As capas usam uma URL `PUT` assinada; documentos e conteúdos usam formulário `
 ## Segurança financeira
 
 Checkout e saques usam `Idempotency-Key`. Operações incertas são preservadas em `sessionStorage` apenas com a referência e o payload operacional, nunca com tokens ou palavras-passe. Uma resposta ambígua não cria automaticamente outra cobrança ou outro saque.
+
+Cada saque pendente pertence ao produtor que o pediu; só uma recusa definitiva (erros 4xx, excepto 401, 408, 409, 425 e 429) descarta a sua referência. Ao terminar a sessão ou mudar de utilizador, a cache de respostas é limpa. Se o servidor não confirmar a saída, a sessão mantém-se e o utilizador é avisado.
 
 Valores monetários atravessam a API em meticais como números decimais. A conversão para unidades menores é uma responsabilidade interna do backend.

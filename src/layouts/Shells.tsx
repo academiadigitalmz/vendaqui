@@ -158,8 +158,7 @@ export function ConsoleLayout({ kind }: { kind: "seller" | "admin" }) {
     };
   }, []);
   const logout = async () => {
-    await signOut();
-    navigate(admin ? "/admin/entrar" : "/entrar", { replace: true });
+    if (await signOut()) navigate(admin ? "/admin/entrar" : "/entrar", { replace: true });
   };
 
   return (
@@ -311,8 +310,7 @@ export function StudentLayout() {
             <Btn
               s="sm"
               onClick={async () => {
-                await signOut();
-                navigate("/entrar");
+                if (await signOut()) navigate("/entrar");
               }}
             >
               Sair

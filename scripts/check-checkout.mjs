@@ -1,37 +1,9 @@
 // Testes do checkout no browser, com a API simulada por HTTP.
-// Serve dist/ com os cabeçalhos de vercel.json, para a política de segurança ser exercitada.
-// Uso: npm run build && npm run test:checkout   (CHROME_PATH escolhe outro Chrome/Chromium)
+// Uso: npm run build && npm run test:checkout
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, statSync } from "node:fs";
-import { createServer } from "node:http";
-import { extname, join, normalize } from "node:path";
-import { fileURLToPath } from "node:url";
-import { chromium } from "playwright-core";
+import { fail, ok, startHarness } from "./browser-harness.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
-const dist = join(root, "dist");
-const securityHeaders = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8")).headers.find(
-  (rule) => rule.source === "/(.*)",
-).headers;
-const types = {
-  ".html": "text/html",
-  ".js": "text/javascript",
-  ".css": "text/css",
-  ".svg": "image/svg+xml",
-};
-const server = createServer((req, res) => {
-  let file = join(dist, normalize(new URL(req.url, "http://x").pathname));
-  if (!existsSync(file) || statSync(file).isDirectory()) file = join(dist, "index.html");
-  for (const { key, value } of securityHeaders) res.setHeader(key, value);
-  res.setHeader("Content-Type", types[extname(file)] || "application/octet-stream");
-  res.end(readFileSync(file));
-});
-await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-const base = `http://127.0.0.1:${server.address().port}`;
-
-const browser = await chromium.launch(
-  process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : { channel: "chrome" },
-);
+const harness = await startHarness();
 
 const productId = "11111111-1111-4111-8111-111111111111";
 const offerId = "22222222-2222-4222-8222-222222222222";
@@ -72,103 +44,77 @@ const pending = () => ({
   claimStatus: "pending_payment",
 });
 
-let failed = 0;
-async function test(name, fn) {
-  const context = await browser.newContext();
-  context.setDefaultTimeout(8000);
-  const page = await context.newPage();
-  const problems = [];
-  page.on("pageerror", (error) => problems.push(error.message));
-  page.on("console", (message) => {
-    if (message.text().includes("Content Security Policy")) problems.push(message.text());
-  });
-  const api = {
-    purchase: pending(),
-    creates: [],
-    retries: [],
-    claims: [],
-    onCreate: null,
-    onRetry: null,
-    onClaim: null,
-  };
-  const ok = (route, data, status = 200) =>
-    route.fulfill({ status, contentType: "application/json", body: JSON.stringify({ data }) });
-  const fail = (route, status, code, message) =>
-    route.fulfill({
-      status,
-      contentType: "application/json",
-      body: JSON.stringify({ error: { code, message } }),
+const test = (name, fn) =>
+  harness.test(name, async ({ page, base }) => {
+    const api = {
+      purchase: pending(),
+      creates: [],
+      retries: [],
+      claims: [],
+      onCreate: null,
+      onRetry: null,
+      onClaim: null,
+    };
+    api.ok = ok;
+    api.fail = fail;
+    // Sem depender da rede: as fontes externas respondem vazias.
+    await page.route(/fonts\.(googleapis|gstatic)\.com/, (route) =>
+      route.fulfill({ contentType: "text/css", body: "" }),
+    );
+    await page.route("**/api/v1/**", (route) => {
+      const request = route.request();
+      const path = new URL(request.url()).pathname.replace("/api/v1", "");
+      const call = () => ({ body: request.postDataJSON(), headers: request.headers() });
+      if (path === "/public/products/curso") return ok(route, product);
+      if (path === "/payments/methods")
+        return ok(route, [{ method: "mpesa", isEnabled: true, ready: true }]);
+      if (path === "/checkout/orders") {
+        api.creates.push(call());
+        if (api.onCreate) return api.onCreate(route);
+        return ok(route, { ...api.purchase, checkoutToken: "checkout-token" }, 201);
+      }
+      if (path === `/checkout/orders/${orderId}`) return ok(route, api.purchase);
+      if (path.endsWith("/payment-attempts")) {
+        api.retries.push(call());
+        return api.onRetry(route);
+      }
+      if (path.endsWith("/claim")) {
+        api.claims.push(call());
+        return api.onClaim(route);
+      }
+      if (path === "/auth/login")
+        return ok(route, {
+          accessToken: "token",
+          user: { id: "buyer", name: "Comprador", email: "buyer@example.com" },
+        });
+      if (path === "/seller/profile")
+        return fail(route, 404, "seller_resource_not_found", "Sem perfil.");
+      return fail(route, 401, "unauthorized", "Sem sessão.");
     });
-  api.ok = ok;
-  api.fail = fail;
-  // Sem depender da rede: as fontes externas respondem vazias.
-  await page.route(/fonts\.(googleapis|gstatic)\.com/, (route) =>
-    route.fulfill({ contentType: "text/css", body: "" }),
-  );
-  await page.route("**/api/v1/**", (route) => {
-    const request = route.request();
-    const path = new URL(request.url()).pathname.replace("/api/v1", "");
-    const call = () => ({ body: request.postDataJSON(), headers: request.headers() });
-    if (path === "/public/products/curso") return ok(route, product);
-    if (path === "/payments/methods")
-      return ok(route, [{ method: "mpesa", isEnabled: true, ready: true }]);
-    if (path === "/checkout/orders") {
-      api.creates.push(call());
-      if (api.onCreate) return api.onCreate(route);
-      return ok(route, { ...api.purchase, checkoutToken: "checkout-token" }, 201);
-    }
-    if (path === `/checkout/orders/${orderId}`) return ok(route, api.purchase);
-    if (path.endsWith("/payment-attempts")) {
-      api.retries.push(call());
-      return api.onRetry(route);
-    }
-    if (path.endsWith("/claim")) {
-      api.claims.push(call());
-      return api.onClaim(route);
-    }
-    if (path === "/auth/login")
-      return ok(route, {
-        accessToken: "token",
-        user: { id: "buyer", name: "Comprador", email: "buyer@example.com" },
-      });
-    if (path === "/seller/profile")
-      return fail(route, 404, "seller_resource_not_found", "Sem perfil.");
-    return fail(route, 401, "unauthorized", "Sem sessão.");
+    const buy = async () => {
+      await page.goto(`${base}/checkout/curso`);
+      await page.locator("#co-name").fill("Comprador real");
+      await page.locator("#co-email").fill("buyer@example.com");
+      await page.locator("#co-wallet").fill("84 422 6545");
+      await page.getByRole("button", { name: /Comprar agora/ }).click();
+    };
+    const pay = () => {
+      api.purchase.order.status = "paid";
+      api.purchase.payment.status = "succeeded";
+      api.purchase.attempt.status = "succeeded";
+    };
+    const refuse = () => {
+      api.purchase.attempt.status = "failed";
+      api.purchase.payment.status = "pending";
+    };
+    // Navega sem recarregar, para a sessão em memória se manter.
+    const go = (path) =>
+      page.evaluate((to) => {
+        history.pushState({}, "", to);
+        dispatchEvent(new PopStateEvent("popstate"));
+      }, path);
+    await fn({ page, base, api, buy, pay, refuse, go });
   });
-  const buy = async () => {
-    await page.goto(`${base}/checkout/curso`);
-    await page.locator("#co-name").fill("Comprador real");
-    await page.locator("#co-email").fill("buyer@example.com");
-    await page.locator("#co-wallet").fill("84 422 6545");
-    await page.getByRole("button", { name: /Comprar agora/ }).click();
-  };
-  const pay = () => {
-    api.purchase.order.status = "paid";
-    api.purchase.payment.status = "succeeded";
-    api.purchase.attempt.status = "succeeded";
-  };
-  const refuse = () => {
-    api.purchase.attempt.status = "failed";
-    api.purchase.payment.status = "pending";
-  };
-  // Navega sem recarregar, para a sessão em memória se manter.
-  const go = (path) =>
-    page.evaluate((to) => {
-      history.pushState({}, "", to);
-      dispatchEvent(new PopStateEvent("popstate"));
-    }, path);
-  try {
-    await fn({ page, api, buy, pay, refuse, go });
-    assert.deepEqual(problems, []);
-    console.log(`ok   ${name}`);
-  } catch (error) {
-    failed++;
-    console.error(`FAIL ${name}\n`, error.message, problems);
-  } finally {
-    // Um browser que já caiu não pode esconder o resultado do teste.
-    await context.close().catch((error) => console.error(error.message));
-  }
-}
 
 await test("compra de convidado: espera visível, claim filtrado e rascunho libertado", async (t) => {
   await t.buy();
@@ -305,7 +251,7 @@ await test("o parâmetro next não leva para fora do site", async (t) => {
     "/.//evil.example",
     "https://evil.example",
   ]) {
-    await t.page.goto(`${base}/entrar?next=${encodeURIComponent(next)}`);
+    await t.page.goto(`${t.base}/entrar?next=${encodeURIComponent(next)}`);
     await t.page.locator("#login-email").fill("buyer@example.com");
     await t.page.locator("#login-password").fill("palavra-passe-longa");
     await t.page.getByRole("button", { name: "Entrar", exact: true }).click();
@@ -313,6 +259,4 @@ await test("o parâmetro next não leva para fora do site", async (t) => {
   }
 });
 
-await browser.close();
-server.close();
-process.exitCode = failed ? 1 : 0;
+await harness.close();
