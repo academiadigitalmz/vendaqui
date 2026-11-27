@@ -13,9 +13,13 @@ const message = (error: unknown) =>
   error instanceof HttpError
     ? error.message
     : "Não foi possível concluir. Verifique a ligação e tente novamente.";
+// Only same-origin paths: URL parsing also catches backslash and dot-segment spellings of "//host".
 const safeNext = (params: URLSearchParams, fallback: string) => {
   const next = params.get("next");
-  return next?.startsWith("/") && !next.startsWith("//") ? next : fallback;
+  if (!next?.startsWith("/")) return fallback;
+  const url = new URL(next, window.location.origin);
+  if (url.origin !== window.location.origin || url.pathname.startsWith("//")) return fallback;
+  return url.pathname + url.search + url.hash;
 };
 const normalizeMSISDN = (value: string) => {
   const digits = value.replace(/\D/g, "");

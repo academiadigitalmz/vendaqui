@@ -1,4 +1,4 @@
-# Publica a demonstração (com a API simulada) no GitHub Pages a cada push para main.
+# Publica o frontend no GitHub Pages a cada push para main. Sem VITE_API_URL não há backend.
 # Requer Pages ativo em Settings → Pages → Source: GitHub Actions.
 # Nota: em contas e organizações no plano gratuito, o Pages só funciona em repositórios públicos.
 name: Publicar demo no GitHub Pages
@@ -32,7 +32,6 @@ jobs:
         env:
           # o site fica em https://<conta>.github.io/<repositório>/
           BASE_PATH: /${{ github.event.repository.name }}/
-          VITE_USE_MOCKS: "true"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

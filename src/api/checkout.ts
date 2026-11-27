@@ -64,6 +64,21 @@ export interface BuyerSession {
   accessToken: string;
   user: BuyerIdentity;
 }
+// The claim endpoint may serialize its domain user with PascalCase keys and internal fields.
+type RawIdentity = Partial<BuyerIdentity> & {
+  ID?: string;
+  Name?: string;
+  Email?: string;
+  MSISDN?: string;
+};
+
+/** Copies only the public identity fields, so nothing else reaches app state. */
+const publicIdentity = (user: RawIdentity): BuyerIdentity => ({
+  id: user.id ?? user.ID ?? "",
+  name: user.name ?? user.Name ?? "",
+  email: user.email ?? user.Email ?? "",
+  msisdn: user.msisdn ?? user.MSISDN,
+});
 
 const request = <T>(
   method: string,
@@ -102,13 +117,31 @@ export const checkoutApi = {
       checkoutHeaders(token, key),
     ),
   claim: async (id: string, code: string, password: string, token?: string) => {
-    return request<{ order: CheckoutOrder; accessToken?: string; user?: BuyerIdentity }>(
+    const result = await request<{
+      order: CheckoutOrder;
+      accessToken?: string;
+      user?: RawIdentity;
+    }>(
       "POST",
       `/checkout/orders/${encodeURIComponent(id)}/claim`,
       { code, password },
       checkoutHeaders(token),
     );
+    return {
+      order: result.order,
+      accessToken: result.accessToken,
+      user: result.user ? publicIdentity(result.user) : undefined,
+    };
   },
-  login: (email: string, password: string) =>
-    request<BuyerSession>("POST", "/auth/login", { email, password }),
+  login: async (email: string, password: string): Promise<BuyerSession> => {
+    const result = await request<{ accessToken: string; user: RawIdentity }>(
+      "POST",
+      "/auth/login",
+      {
+        email,
+        password,
+      },
+    );
+    return { accessToken: result.accessToken, user: publicIdentity(result.user) };
+  },
 };

@@ -26,6 +26,10 @@ export function clearDraft(key: string, draft?: CheckoutDraft | null) {
   sessionStorage.removeItem(prefix + key);
   if (draft?.orderId) sessionStorage.removeItem(prefix + "order." + draft.orderId);
 }
+/** Forgets the form draft of a paid order; the result page still reads the order record. */
+export function releaseDraft(slug: string) {
+  sessionStorage.removeItem(prefix + slug);
+}
 export function normalizePhone(value: string) {
   const digits = value.replace(/\D/g, "");
   if (!digits) return "";
@@ -43,4 +47,13 @@ export function paymentState(p: Purchase): "paid" | "retry" | "closed" | "waitin
   )
     return "retry";
   return "waiting";
+}
+/** A closed order allows a new purchase only when no charge on it can still succeed. */
+export function canStartOver(p: Purchase) {
+  if (paymentState(p) !== "closed") return false;
+  if (p.order.status === "refunded") return true;
+  return (
+    ["pending", "failed", "cancelled", "expired"].includes(p.payment.status) &&
+    ["failed", "cancelled", "expired"].includes(p.attempt.status)
+  );
 }
